@@ -16,3 +16,6 @@ tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 anyhow = "1"
+tauri-plugin-store = "2.5.0"
+tauri-plugin-dialog = "2.8.1"
+rusqlite = { version = "0.40.2", features = ["bundled"] }

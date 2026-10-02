@@ -33,5 +33,6 @@ npm run tauri dev     # desktop app with hot reload
 ## Notes
 
 - Cesium's `Workers`, `Assets`, `Widgets`, and `ThirdParty` are copied to `/cesium` by a small plugin in `vite.config.ts`; `CESIUM_BASE_URL` is set there.
-- No API keys are bundled. Provider keys are entered in Settings and stored locally (M1).
+- No API keys are bundled. Provider keys are entered in Settings and stored locally in the app data folder (`settings.json`).
 - OSM tiles: attribution is always shown; no bulk prefetching or offline caching.
+- Offline basemaps: add a raster `.mbtiles` file in Settings. `node --no-warnings test-data/make-test-mbtiles.ts` generates a small synthetic one (`test-data/test-tiles.mbtiles`, git-ignored) for testing.
