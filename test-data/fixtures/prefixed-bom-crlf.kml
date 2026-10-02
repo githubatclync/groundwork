@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<kml:kml xmlns:kml="http://www.opengis.net/kml/2.2">
+<kml:Document><kml:name>BOM, kml: prefix, CRLF</kml:name>
+<kml:Placemark><kml:name>Prefixed</kml:name>
+<kml:Point><kml:coordinates>
+  -122.00,37.80,0
+</kml:coordinates></kml:Point></kml:Placemark>
+</kml:Document></kml:kml>

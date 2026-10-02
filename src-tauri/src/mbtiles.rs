@@ -87,10 +87,12 @@ fn mime_for(format: &str, data: &[u8]) -> &'static str {
 }
 
 fn meta(conn: &Connection, key: &str) -> Option<String> {
-    conn.query_row("SELECT value FROM metadata WHERE name = ?1", [key], |r| r.get(0))
-        .optional()
-        .ok()
-        .flatten()
+    conn.query_row("SELECT value FROM metadata WHERE name = ?1", [key], |r| {
+        r.get(0)
+    })
+    .optional()
+    .ok()
+    .flatten()
 }
 
 fn id_for_path(path: &str) -> String {
@@ -110,20 +112,30 @@ fn open(path: &str) -> Result<(MbtilesInfo, Source), MbtilesError> {
         .optional()
         .map_err(|_| MbtilesError::NotMbtiles(file_name.clone()))?;
 
-    let format = meta(&conn, "format").unwrap_or_else(|| "png".into()).to_lowercase();
+    let format = meta(&conn, "format")
+        .unwrap_or_else(|| "png".into())
+        .to_lowercase();
     if format == "pbf" || format == "mvt" {
         return Err(MbtilesError::UnsupportedFormat(file_name, format));
     }
     let zoom_range: (u32, u32) = conn
-        .query_row("SELECT MIN(zoom_level), MAX(zoom_level) FROM tiles", [], |r| {
-            Ok((
-                r.get::<_, Option<u32>>(0)?.unwrap_or(0),
-                r.get::<_, Option<u32>>(1)?.unwrap_or(0),
-            ))
-        })
+        .query_row(
+            "SELECT MIN(zoom_level), MAX(zoom_level) FROM tiles",
+            [],
+            |r| {
+                Ok((
+                    r.get::<_, Option<u32>>(0)?.unwrap_or(0),
+                    r.get::<_, Option<u32>>(1)?.unwrap_or(0),
+                ))
+            },
+        )
         .unwrap_or((0, 0));
-    let min_zoom = meta(&conn, "minzoom").and_then(|v| v.parse().ok()).unwrap_or(zoom_range.0);
-    let max_zoom = meta(&conn, "maxzoom").and_then(|v| v.parse().ok()).unwrap_or(zoom_range.1);
+    let min_zoom = meta(&conn, "minzoom")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(zoom_range.0);
+    let max_zoom = meta(&conn, "maxzoom")
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(zoom_range.1);
     let bounds = meta(&conn, "bounds").and_then(|b| {
         let v: Vec<f64> = b.split(',').filter_map(|s| s.trim().parse().ok()).collect();
         (v.len() == 4).then(|| [v[0], v[1], v[2], v[3]])
@@ -176,8 +188,14 @@ pub fn open_mbtiles(
 
 #[tauri::command]
 pub fn close_mbtiles(id: String, state: State<'_, MbtilesState>) -> Result<(), MbtilesError> {
-    let mut sources = state.0.lock().map_err(|_| MbtilesError::UnknownId(id.clone()))?;
-    sources.remove(&id).map(|_| ()).ok_or(MbtilesError::UnknownId(id))
+    let mut sources = state
+        .0
+        .lock()
+        .map_err(|_| MbtilesError::UnknownId(id.clone()))?;
+    sources
+        .remove(&id)
+        .map(|_| ())
+        .ok_or(MbtilesError::UnknownId(id))
 }
 
 /// Handler for the `mbtiles://` URI scheme.
@@ -217,15 +235,20 @@ mod tests {
     #[test]
     fn parses_tile_paths() {
         assert_eq!(parse_tile_path("/abc/3/4/5"), Some(("abc".into(), 3, 4, 5)));
-        assert_eq!(parse_tile_path("/abc/3/4/5.png"), Some(("abc".into(), 3, 4, 5)));
+        assert_eq!(
+            parse_tile_path("/abc/3/4/5.png"),
+            Some(("abc".into(), 3, 4, 5))
+        );
         assert_eq!(parse_tile_path("/abc/3/4"), None);
         assert_eq!(parse_tile_path("/abc/x/4/5"), None);
         assert_eq!(parse_tile_path("/abc/3/4/5/6"), None);
     }
 
     fn temp_db(name: &str) -> String {
-        let path = std::env::temp_dir()
-            .join(format!("groundwork-test-{name}-{}.mbtiles", std::process::id()));
+        let path = std::env::temp_dir().join(format!(
+            "groundwork-test-{name}-{}.mbtiles",
+            std::process::id()
+        ));
         let _ = std::fs::remove_file(&path);
         path.to_string_lossy().into_owned()
     }
@@ -245,7 +268,11 @@ mod tests {
     fn serves_flipped_row_from_file() {
         let path = temp_db("flip");
         // XYZ tile z=2 x=1 y=0 is stored at TMS row 3.
-        make_db(&path, "png", &format!("INSERT INTO tiles VALUES (2, 1, 3, {PNG_MAGIC});"));
+        make_db(
+            &path,
+            "png",
+            &format!("INSERT INTO tiles VALUES (2, 1, 3, {PNG_MAGIC});"),
+        );
         let (info, source) = open(&path).unwrap();
         assert_eq!(info.name, "Test");
         assert_eq!(info.max_zoom, 2);
@@ -263,11 +290,17 @@ mod tests {
     fn rejects_vector_tiles_and_non_mbtiles() {
         let path = temp_db("pbf");
         make_db(&path, "pbf", "");
-        assert!(matches!(open(&path), Err(MbtilesError::UnsupportedFormat(..))));
+        assert!(matches!(
+            open(&path),
+            Err(MbtilesError::UnsupportedFormat(..))
+        ));
         let _ = std::fs::remove_file(&path);
 
         let path = temp_db("empty");
-        Connection::open(&path).unwrap().execute_batch("CREATE TABLE x (a)").unwrap();
+        Connection::open(&path)
+            .unwrap()
+            .execute_batch("CREATE TABLE x (a)")
+            .unwrap();
         assert!(matches!(open(&path), Err(MbtilesError::NotMbtiles(_))));
         let _ = std::fs::remove_file(&path);
     }

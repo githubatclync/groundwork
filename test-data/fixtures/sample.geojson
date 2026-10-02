@@ -1,0 +1,6 @@
+{"type":"FeatureCollection","features":[
+ {"type":"Feature","properties":{"name":"City","population":850000,"capital":true},"geometry":{"type":"Point","coordinates":[-121.8,37.3]}},
+ {"type":"Feature","properties":{"name":"Road","lanes":4},"geometry":{"type":"LineString","coordinates":[[-121.9,37.2],[-121.8,37.25],[-121.7,37.2]]}},
+ {"type":"Feature","properties":{"name":"Park with lake"},"geometry":{"type":"Polygon","coordinates":[[[-121.9,37.1],[-121.7,37.1],[-121.7,37.0],[-121.9,37.0],[-121.9,37.1]],[[-121.85,37.07],[-121.75,37.07],[-121.75,37.03],[-121.85,37.03],[-121.85,37.07]]]}},
+ {"type":"Feature","properties":{"name":"Islands"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-121.6,37.1],[-121.5,37.1],[-121.5,37.0],[-121.6,37.1]]],[[[-121.45,37.1],[-121.35,37.1],[-121.4,37.0],[-121.45,37.1]]]]}}
+]}

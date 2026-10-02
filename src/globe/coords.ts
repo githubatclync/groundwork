@@ -33,7 +33,8 @@ export function utmZone(lat: number, lon: number): number {
   let zone = Math.floor((lon + 180) / 6) + 1;
   if (lat >= 56 && lat < 64 && lon >= 3 && lon < 12) zone = 32; // Norway
   if (lat >= 72 && lat < 84) {
-    if (lon >= 0 && lon < 9) zone = 31; // Svalbard
+    if (lon >= 0 && lon < 9)
+      zone = 31; // Svalbard
     else if (lon >= 9 && lon < 21) zone = 33;
     else if (lon >= 21 && lon < 33) zone = 35;
     else if (lon >= 33 && lon < 42) zone = 37;

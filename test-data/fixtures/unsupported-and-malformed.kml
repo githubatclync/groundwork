@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
+<Document>
+  <name>Unsupported elements and malformed coordinates</name>
+  <NetworkLink><name>Live feed</name><Link><href>http://example.com/feed.kml</href></Link></NetworkLink>
+  <ScreenOverlay><name>Logo</name><Icon><href>logo.png</href></Icon></ScreenOverlay>
+  <Placemark><name>Has TimeSpan (ignored)</name>
+    <TimeSpan><begin>2020-01-01</begin><end>2020-12-31</end></TimeSpan>
+    <Point><coordinates>-122.10,37.80</coordinates></Point></Placemark>
+  <Placemark><name>Track (skipped)</name><gx:Track><gx:coord>-122.1 37.8 0</gx:coord></gx:Track></Placemark>
+  <Placemark><name>Line with bad vertices</name>
+    <LineString><coordinates>
+      -122.10,37.70   garbage   -122.08,37.71
+      -122.06 , 37.69
+      999,999   -122.04,37.70
+    </coordinates></LineString></Placemark>
+  <Placemark><name>Point with bad coordinates (dropped)</name><Point><coordinates>not,numbers</coordinates></Point></Placemark>
+</Document>
+</kml>

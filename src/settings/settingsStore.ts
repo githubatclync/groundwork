@@ -35,7 +35,8 @@ export const DEFAULT_SETTINGS: PersistedSettings = {
 /** Keeps only values of the right type so a hand-edited or old settings file can't break startup. */
 export function sanitizeSettings(raw: Record<string, unknown>): PersistedSettings {
   const d = DEFAULT_SETTINGS;
-  const str = (k: keyof PersistedSettings) => (typeof raw[k] === 'string' ? (raw[k] as string) : (d[k] as string));
+  const str = (k: keyof PersistedSettings) =>
+    typeof raw[k] === 'string' ? (raw[k] as string) : (d[k] as string);
   const fmt = raw.coordFormat;
   return {
     ionToken: str('ionToken'),
@@ -95,7 +96,9 @@ export const useSettings = create<SettingsState>((set, get) => ({
 
   update: async (patch) => {
     set(patch);
-    await saveValues(patch).catch((e) => set({ problems: [`Could not save settings: ${message(e)}`] }));
+    await saveValues(patch).catch((e) =>
+      set({ problems: [`Could not save settings: ${message(e)}`] }),
+    );
   },
 
   addMbtiles: async () => {

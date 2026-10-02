@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Lines</name>
+  <Style id="thick"><LineStyle><color>ff00a5ff</color><width>6</width></LineStyle></Style>
+  <Style id="thin"><LineStyle><color>ff0000ff</color><width>1</width></LineStyle></Style>
+  <Placemark><name>Thick orange, clamped</name><styleUrl>#thick</styleUrl>
+    <LineString><tessellate>1</tessellate><coordinates>-122.50,37.70 -122.45,37.72 -122.40,37.70</coordinates></LineString></Placemark>
+  <Placemark><name>Thin red, relative to ground</name><styleUrl>#thin</styleUrl>
+    <LineString><altitudeMode>relativeToGround</altitudeMode><coordinates>
+      -122.50,37.68,200
+      -122.45,37.69,800
+      -122.40,37.68,200
+    </coordinates></LineString></Placemark>
+  <Placemark><name>Absolute with extrude</name><Style><LineStyle><color>ff00ff00</color><width>3</width></LineStyle></Style>
+    <LineString><extrude>1</extrude><altitudeMode>absolute</altitudeMode><coordinates>-122.50,37.66,300 -122.40,37.66,600</coordinates></LineString></Placemark>
+  <Placemark><name>LinearRing as a line</name><LinearRing><coordinates>-122.48,37.64 -122.46,37.64 -122.46,37.62 -122.48,37.62 -122.48,37.64</coordinates></LinearRing></Placemark>
+</Document>
+</kml>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Attributes</name>
+  <Schema name="parcels" id="parcels">
+    <SimpleField type="string" name="parcel_id"/>
+    <SimpleField type="int" name="units"/>
+    <SimpleField type="double" name="area_ha"/>
+  </Schema>
+  <Placemark><name>Data elements</name>
+    <ExtendedData>
+      <Data name="owner"><displayName>Owner</displayName><value>Acme &amp; Sons</value></Data>
+      <Data name="year"><value>1998</value></Data>
+    </ExtendedData>
+    <Point><coordinates>-122.20,37.80</coordinates></Point></Placemark>
+  <Placemark><name>SchemaData 1</name>
+    <ExtendedData><SchemaData schemaUrl="#parcels">
+      <SimpleData name="parcel_id">007</SimpleData><SimpleData name="units">12</SimpleData><SimpleData name="area_ha">3.25</SimpleData>
+    </SchemaData></ExtendedData>
+    <Point><coordinates>-122.19,37.80</coordinates></Point></Placemark>
+  <Placemark><name>SchemaData 2</name>
+    <ExtendedData><SchemaData schemaUrl="#parcels">
+      <SimpleData name="parcel_id">100</SimpleData><SimpleData name="units">3</SimpleData><SimpleData name="area_ha">10</SimpleData>
+    </SchemaData></ExtendedData>
+    <Point><coordinates>-122.18,37.80</coordinates></Point></Placemark>
+</Document>
+</kml>

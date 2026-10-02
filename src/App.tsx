@@ -1,27 +1,62 @@
-// Root component: toolbar, globe, status bar, and the settings dialog.
+// Root component: toolbar, layers panel, globe, status bar, settings dialog, and drag-and-drop.
 import { useEffect, useState } from 'react';
 import { GlobeView } from './globe/GlobeView';
+import { getLaunchFiles, listenForDrops } from './io/import';
+import { openFiles, startLayerManager } from './layers/layerManager';
 import { useSettings } from './settings/settingsStore';
 import { Attribution } from './ui/Attribution';
+import { LayersPanel } from './ui/LayersPanel';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { StatusBar } from './ui/StatusBar';
 import { Toolbar } from './ui/Toolbar';
 
+// Launch files must open once even though React StrictMode runs effects twice in development.
+let launchFilesHandled = false;
+
 export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [dropHover, setDropHover] = useState(false);
   const init = useSettings((s) => s.init);
 
   useEffect(() => {
     void init();
   }, [init]);
 
+  useEffect(() => startLayerManager(), []);
+
+  // Files passed on the command line ("Open with…") open at startup.
+  useEffect(() => {
+    if (launchFilesHandled) return;
+    launchFilesHandled = true;
+    void getLaunchFiles()
+      .then((paths) => (paths.length ? openFiles(paths) : undefined))
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+    void listenForDrops((paths) => void openFiles(paths), setDropHover).then((fn) => {
+      if (cancelled) fn();
+      else unlisten = fn;
+    });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
   return (
     <div className="app">
       <Toolbar onOpenSettings={() => setSettingsOpen(true)} />
-      <main className="globe-wrap">
-        <GlobeView />
-        <Attribution />
-      </main>
+      <div className="workspace">
+        <LayersPanel />
+        <main className="globe-wrap">
+          <GlobeView />
+          <Attribution />
+          {dropHover && <div className="drop-overlay">Drop files to open</div>}
+        </main>
+      </div>
       <StatusBar />
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
     </div>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Polygons</name>
+  <Style id="fill"><PolyStyle><color>7f00ff00</color></PolyStyle><LineStyle><color>ff00ff00</color><width>2</width></LineStyle></Style>
+  <Style id="outlineOnly"><PolyStyle><fill>0</fill></PolyStyle><LineStyle><color>ff0000ff</color><width>3</width></LineStyle></Style>
+  <Style id="noOutline"><PolyStyle><color>7fff0000</color><outline>0</outline></PolyStyle></Style>
+  <Placemark><name>Square with hole</name><styleUrl>#fill</styleUrl>
+    <Polygon>
+      <outerBoundaryIs><LinearRing><coordinates>-122.50,37.60 -122.40,37.60 -122.40,37.50 -122.50,37.50 -122.50,37.60</coordinates></LinearRing></outerBoundaryIs>
+      <innerBoundaryIs><LinearRing><coordinates>-122.47,37.57 -122.43,37.57 -122.43,37.53 -122.47,37.53 -122.47,37.57</coordinates></LinearRing></innerBoundaryIs>
+    </Polygon></Placemark>
+  <Placemark><name>Outline only</name><styleUrl>#outlineOnly</styleUrl>
+    <Polygon><outerBoundaryIs><LinearRing><coordinates>-122.38,37.60 -122.30,37.60 -122.34,37.52 -122.38,37.60</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+  <Placemark><name>No outline</name><styleUrl>#noOutline</styleUrl>
+    <Polygon><outerBoundaryIs><LinearRing><coordinates>-122.28,37.60 -122.20,37.60 -122.20,37.52 -122.28,37.52 -122.28,37.60</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+  <Placemark><name>Extruded building</name><styleUrl>#fill</styleUrl>
+    <Polygon><extrude>1</extrude><altitudeMode>relativeToGround</altitudeMode>
+      <outerBoundaryIs><LinearRing><coordinates>-122.46,37.48,300 -122.44,37.48,300 -122.44,37.46,300 -122.46,37.46,300 -122.46,37.48,300</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+  <Placemark><name>MultiGeometry (point, line, polygon)</name><styleUrl>#fill</styleUrl>
+    <MultiGeometry>
+      <Point><coordinates>-122.36,37.47</coordinates></Point>
+      <LineString><coordinates>-122.38,37.46 -122.30,37.46</coordinates></LineString>
+      <MultiGeometry>
+        <Polygon><outerBoundaryIs><LinearRing><coordinates>-122.37,37.45 -122.35,37.45 -122.35,37.43 -122.37,37.43 -122.37,37.45</coordinates></LinearRing></outerBoundaryIs></Polygon>
+      </MultiGeometry>
+    </MultiGeometry></Placemark>
+</Document>
+</kml>

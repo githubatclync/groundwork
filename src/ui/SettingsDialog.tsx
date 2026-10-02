@@ -55,7 +55,10 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             {s.mbtiles.map((m) => (
               <li key={m.path}>
                 <span title={m.path}>
-                  {m.name} <small className="muted">z{m.minZoom}–{m.maxZoom}</small>
+                  {m.name}{' '}
+                  <small className="muted">
+                    z{m.minZoom}–{m.maxZoom}
+                  </small>
                 </span>
                 <button type="button" onClick={() => void s.removeMbtiles(m.path)}>
                   Remove

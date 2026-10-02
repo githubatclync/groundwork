@@ -1,5 +1,13 @@
-// Groundwork backend: Tauri app setup. Importers and commands are added per milestone.
+// Groundwork backend: Tauri app setup and the importer library (also used by the bench example).
+pub mod binary;
+pub mod commands;
+pub mod geojson;
+pub mod gpx;
+pub mod import;
+pub mod kml;
+pub mod layer;
 mod mbtiles;
+pub mod style;
 
 /// Starts the Tauri application.
 pub fn run() {
@@ -7,8 +15,17 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .manage(mbtiles::MbtilesState::default())
+        .manage(commands::LayerStore::default())
         .register_uri_scheme_protocol("mbtiles", mbtiles::handle_request)
-        .invoke_handler(tauri::generate_handler![mbtiles::open_mbtiles, mbtiles::close_mbtiles])
+        .register_uri_scheme_protocol("kmz", commands::handle_kmz)
+        .invoke_handler(tauri::generate_handler![
+            mbtiles::open_mbtiles,
+            mbtiles::close_mbtiles,
+            commands::import_file,
+            commands::get_geometry,
+            commands::get_launch_files,
+            commands::remove_layer
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Groundwork");
 }

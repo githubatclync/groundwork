@@ -10,7 +10,9 @@
     "tauri": "tauri",
     "test": "vitest run",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "generate:data": "node --no-warnings test-data/generate.ts all",
+    "bench": "cargo run --release --manifest-path src-tauri/Cargo.toml --example bench -- test-data/generated/big-lines.kml test-data/generated/big-points.kml test-data/generated/big-polys.kmz test-data/generated/mixed.geojson"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

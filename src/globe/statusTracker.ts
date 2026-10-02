@@ -48,7 +48,9 @@ export function trackStatus(viewer: Viewer): () => void {
     frames++;
     if (now - lastFpsTime >= 1000) {
       const showFps = useSettings.getState().showFps;
-      useStatus.getState().set({ fps: showFps ? Math.round((frames * 1000) / (now - lastFpsTime)) : null });
+      useStatus
+        .getState()
+        .set({ fps: showFps ? Math.round((frames * 1000) / (now - lastFpsTime)) : null });
       frames = 0;
       lastFpsTime = now;
     }

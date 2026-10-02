@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Groundwork fixtures" xmlns="http://www.topografix.com/GPX/1/1">
+  <wpt lat="37.55" lon="-121.9"><ele>120</ele><name>Trailhead</name><desc>Start here</desc><sym>Flag</sym></wpt>
+  <rte><name>Planned route</name><rtept lat="37.55" lon="-121.9"/><rtept lat="37.58" lon="-121.85"/><rtept lat="37.60" lon="-121.80"/></rte>
+  <trk><name>Morning run</name><type>running</type>
+    <trkseg>
+      <trkpt lat="37.55" lon="-121.90"><ele>120</ele></trkpt>
+      <trkpt lat="37.56" lon="-121.88"><ele>140</ele></trkpt>
+      <trkpt lat="37.57" lon="-121.87"><ele>160</ele></trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="37.58" lon="-121.86"><ele>150</ele></trkpt>
+      <trkpt lat="37.59" lon="-121.84"><ele>130</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

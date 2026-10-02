@@ -28,7 +28,8 @@ export async function loadAll(): Promise<Record<string, unknown>> {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k?.startsWith(LS_PREFIX)) out[k.slice(LS_PREFIX.length)] = JSON.parse(localStorage.getItem(k) ?? 'null');
+      if (k?.startsWith(LS_PREFIX))
+        out[k.slice(LS_PREFIX.length)] = JSON.parse(localStorage.getItem(k) ?? 'null');
     }
   } catch {
     /* storage unavailable: start with defaults */
@@ -44,7 +45,8 @@ export async function saveValues(values: Record<string, unknown>): Promise<void>
     return;
   }
   try {
-    for (const [k, v] of Object.entries(values)) localStorage.setItem(LS_PREFIX + k, JSON.stringify(v));
+    for (const [k, v] of Object.entries(values))
+      localStorage.setItem(LS_PREFIX + k, JSON.stringify(v));
   } catch {
     /* storage unavailable: settings last for this session only */
   }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Ground overlay</name>
+  <GroundOverlay><name>Rotated image (30 deg)</name>
+    <color>cdffffff</color>
+    <Icon><href>overlay.png</href></Icon>
+    <LatLonBox><north>37.90</north><south>37.85</south><east>-122.15</east><west>-122.25</west><rotation>30</rotation></LatLonBox>
+  </GroundOverlay>
+  <GroundOverlay><name>Unrotated image</name>
+    <Icon><href>overlay.png</href></Icon>
+    <LatLonBox><north>37.95</north><south>37.92</south><east>-122.15</east><west>-122.25</west></LatLonBox>
+  </GroundOverlay>
+</Document>
+</kml>

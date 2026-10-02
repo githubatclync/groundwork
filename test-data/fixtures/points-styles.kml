@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>Points and styles</name>
+  <!-- KML colors are aabbggrr: ff0000ff is opaque RED, ffff0000 is opaque BLUE -->
+  <Style id="red"><IconStyle><color>ff0000ff</color><scale>1.5</scale></IconStyle><LabelStyle><scale>1</scale></LabelStyle></Style>
+  <Style id="blue"><IconStyle><color>ffff0000</color><scale>2</scale><heading>45</heading></IconStyle></Style>
+  <StyleMap id="map">
+    <Pair><key>normal</key><styleUrl>#red</styleUrl></Pair>
+    <Pair><key>highlight</key><styleUrl>#blue</styleUrl></Pair>
+  </StyleMap>
+  <Placemark><name>Shared red</name><styleUrl>#red</styleUrl><Point><coordinates>-122.45,37.80,0</coordinates></Point></Placemark>
+  <Placemark><name>Via StyleMap (red)</name><styleUrl>#map</styleUrl><Point><coordinates>-122.44,37.80,0</coordinates></Point></Placemark>
+  <Placemark><name>Shared blue</name><styleUrl>#blue</styleUrl><Point><coordinates>-122.43,37.80,0</coordinates></Point></Placemark>
+  <Placemark><name>Inline green</name>
+    <Style><IconStyle><color>ff00ff00</color><scale>1</scale></IconStyle></Style>
+    <Point><coordinates>-122.42,37.80,0</coordinates></Point></Placemark>
+  <Placemark><name>Unstyled</name><Point><coordinates>-122.41,37.80,0</coordinates></Point></Placemark>
+  <Placemark><name>Absolute altitude 500 m</name><Point><altitudeMode>absolute</altitudeMode><extrude>1</extrude><coordinates>-122.40,37.80,500</coordinates></Point></Placemark>
+</Document>
+</kml>

@@ -1,5 +1,7 @@
 // Basemap provider registry and URL helpers. Keys are never hardcoded: providers that need one
 // reference a setting name and the key is substituted into `{key}` at runtime.
+import { customSchemeUrl } from '../io/scheme';
+
 export type KeySetting = 'ionToken' | 'esriKey' | 'mapboxToken';
 
 export interface BasemapConfig {
@@ -91,13 +93,8 @@ export interface MbtilesEntry {
 export const mbtilesBasemapId = (path: string) => `mbtiles:${path}`;
 
 /** Tile URL template for the custom protocol; Windows webviews serve custom schemes over http. */
-export function mbtilesUrlTemplate(
-  runtimeId: string,
-  isWindows = /Windows/i.test(navigator.userAgent),
-) {
-  return isWindows
-    ? `http://mbtiles.localhost/${runtimeId}/{z}/{x}/{y}`
-    : `mbtiles://localhost/${runtimeId}/{z}/{x}/{y}`;
+export function mbtilesUrlTemplate(runtimeId: string, isWindows?: boolean) {
+  return customSchemeUrl('mbtiles', `${runtimeId}/{z}/{x}/{y}`, isWindows);
 }
 
 export function mbtilesBasemap(entry: MbtilesEntry): BasemapConfig {

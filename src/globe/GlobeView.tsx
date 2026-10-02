@@ -7,6 +7,7 @@ import { useSettings, resolveActiveBasemap } from '../settings/settingsStore';
 import { createImageryProvider } from './imagery';
 import { useStatus } from './statusStore';
 import { trackStatus } from './statusTracker';
+import { setViewer as registerViewer } from './viewerRegistry';
 
 export function GlobeView() {
   const ref = useRef<HTMLDivElement>(null);
@@ -37,7 +38,11 @@ export function GlobeView() {
     });
     const stopTracking = trackStatus(v);
     setViewer(v);
+    registerViewer(v);
+    // Dev-only hook so automated checks can drive the camera (never present in production builds).
+    if (import.meta.env.DEV) (window as unknown as { __viewer?: Viewer }).__viewer = v;
     return () => {
+      registerViewer(null);
       stopTracking();
       v.destroy();
       setViewer(null);
