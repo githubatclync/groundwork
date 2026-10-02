@@ -1,0 +1,7 @@
+node_modules
+dist
+public/cesium
+src-tauri/target
+src-tauri/gen
+*.log
+.DS_Store

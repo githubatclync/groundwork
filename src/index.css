@@ -1,0 +1,8 @@
+:root { color-scheme: light dark; }
+html, body, #root { margin: 0; height: 100%; }
+body { font-family: system-ui, sans-serif; }
+.globe { position: absolute; inset: 0; }
+.attribution {
+  position: absolute; right: 8px; bottom: 8px; z-index: 5; padding: 2px 6px;
+  font-size: 11px; background: rgba(255, 255, 255, 0.8); color: #222; border-radius: 3px;
+}
