@@ -171,6 +171,10 @@ pub struct LayerData {
     pub overlays: Vec<Overlay>,
     pub bounds: Option<[f64; 4]>,
     pub resources: Resources,
+    /// west, south, east, north per feature; all NaN for features without geometry.
+    pub feature_bounds: Vec<[f64; 4]>,
+    /// The most recently built attribute-table view (sorted/filtered feature ids), keyed by its spec.
+    pub view_cache: Mutex<Option<(String, std::sync::Arc<Vec<u32>>)>>,
 }
 
 impl std::fmt::Debug for LayerData {
@@ -189,6 +193,24 @@ impl LayerData {
     }
     pub fn part_count(&self) -> usize {
         self.part_type.len()
+    }
+
+    /// Range of part indices belonging to a feature (parts are stored in feature order).
+    pub fn parts_of(&self, feature: u32) -> std::ops::Range<usize> {
+        let start = self.part_feature.partition_point(|&f| f < feature);
+        let end = self.part_feature.partition_point(|&f| f <= feature);
+        start..end
+    }
+
+    /// Vertex coordinates (lon, lat, alt triples) of one part.
+    pub fn part_coords(&self, part: usize) -> &[f64] {
+        let start = self.part_offset[part] as usize * 3;
+        let end = self
+            .part_offset
+            .get(part + 1)
+            .map(|&o| o as usize * 3)
+            .unwrap_or(self.coords.len());
+        &self.coords[start..end]
     }
 }
 
@@ -582,6 +604,27 @@ impl LayerBuilder {
             })
             .collect();
 
+        let mut feature_bounds = vec![[f64::NAN; 4]; self.features.len()];
+        for (p, &f) in self.part_feature.iter().enumerate() {
+            let start = self.part_offset[p] as usize * 3;
+            let end = self
+                .part_offset
+                .get(p + 1)
+                .map(|&o| o as usize * 3)
+                .unwrap_or(self.coords.len());
+            let b = &mut feature_bounds[f as usize];
+            for v in self.coords[start..end].chunks_exact(3) {
+                if b[0].is_nan() {
+                    *b = [v[0], v[1], v[0], v[1]];
+                } else {
+                    b[0] = b[0].min(v[0]);
+                    b[1] = b[1].min(v[1]);
+                    b[2] = b[2].max(v[0]);
+                    b[3] = b[3].max(v[1]);
+                }
+            }
+        }
+
         LayerData {
             name: self.name,
             source_path: source_path.to_string(),
@@ -600,6 +643,8 @@ impl LayerBuilder {
             overlays: self.overlays,
             bounds: self.bounds,
             resources,
+            feature_bounds,
+            view_cache: Mutex::new(None),
         }
     }
 }

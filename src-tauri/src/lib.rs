@@ -1,6 +1,8 @@
 // Groundwork backend: Tauri app setup and the importer library (also used by the bench example).
+pub mod attributes;
 pub mod binary;
 pub mod commands;
+pub mod geo;
 pub mod geojson;
 pub mod gpx;
 pub mod import;
@@ -23,6 +25,9 @@ pub fn run() {
             mbtiles::close_mbtiles,
             commands::import_file,
             commands::get_geometry,
+            commands::get_attributes,
+            commands::find_row,
+            commands::get_feature,
             commands::get_launch_files,
             commands::remove_layer
         ])

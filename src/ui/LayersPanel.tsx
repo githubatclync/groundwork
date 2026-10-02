@@ -1,7 +1,8 @@
-// Left panel: imported layers, import progress, import errors, and per-layer warnings.
-// (Folder tree, opacity, and reordering arrive in M3.)
+// Left panel: imported layers with a folder tree (per-folder visibility), opacity, warnings,
+// import progress, and import errors. (Drag-to-reorder arrives later.)
 import { useState } from 'react';
 import { zoomToBounds } from '../globe/camera';
+import type { FolderNode } from '../io/types';
 import { removeLayer } from '../layers/layerManager';
 import { useLayers, type ImportJob, type Layer } from '../layers/layerStore';
 
@@ -27,13 +28,62 @@ function JobRow({ job }: { job: ImportJob }) {
   );
 }
 
-function LayerRow({ layer }: { layer: Layer }) {
+function FolderRow({ layerId, node, depth }: { layerId: string; node: FolderNode; depth: number }) {
+  const [open, setOpen] = useState(node.open);
+  const setFolderVisible = useLayers((s) => s.setFolderVisible);
+  const hasChildren = node.children.length > 0;
+  return (
+    <li>
+      <div className="folder-row" style={{ paddingLeft: depth * 14 }}>
+        {hasChildren ? (
+          <button
+            type="button"
+            className="twisty"
+            aria-label={open ? 'Collapse folder' : 'Expand folder'}
+            aria-expanded={open}
+            onClick={() => setOpen(!open)}
+          >
+            {open ? '▾' : '▸'}
+          </button>
+        ) : (
+          <span className="twisty" />
+        )}
+        <label>
+          <input
+            type="checkbox"
+            checked={node.visible}
+            onChange={(e) => setFolderVisible(layerId, node.id, e.target.checked)}
+          />
+          <span className="folder-name">{node.name}</span>
+          <span className="muted"> {node.featureCount > 0 ? `(${node.featureCount})` : ''}</span>
+        </label>
+      </div>
+      {open && hasChildren && (
+        <ul className="plain tree">
+          {node.children.map((c) => (
+            <FolderRow key={c.id} layerId={layerId} node={c} depth={depth + 1} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function LayerRow({ layer, active }: { layer: Layer; active: boolean }) {
   const setVisible = useLayers((s) => s.setVisible);
+  const setOpacity = useLayers((s) => s.setOpacity);
+  const setActive = useLayers((s) => s.setActiveLayer);
   const [showWarnings, setShowWarnings] = useState(false);
   const warningTotal = layer.warnings.reduce((n, w) => n + w.count, 0);
+  const root = layer.tree;
+  const hasTree = root.children.length > 0;
 
   return (
-    <li className="layer">
+    <li
+      className={`layer${active ? ' active' : ''}`}
+      aria-current={active ? 'true' : undefined}
+      onClick={() => setActive(layer.id)}
+    >
       <div className="layer-head">
         <label className="layer-name" title={layer.sourcePath}>
           <input
@@ -67,6 +117,30 @@ function LayerRow({ layer }: { layer: Layer }) {
         {layer.manifest.format.toUpperCase()} · parse {layer.manifest.elapsedMs} ms
         {layer.loadMs !== undefined && <> · total {(layer.loadMs / 1000).toFixed(1)} s</>}
       </div>
+      <label className="opacity-row">
+        <span className="muted">Opacity</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={Math.round(layer.opacity * 100)}
+          aria-label={`${layer.name} opacity`}
+          onChange={(e) => setOpacity(layer.id, Number(e.target.value) / 100)}
+        />
+        <span className="muted opacity-value">{Math.round(layer.opacity * 100)}%</span>
+      </label>
+      {!root.visible && (
+        <ul className="plain tree">
+          <FolderRow layerId={layer.id} node={{ ...root, children: [] }} depth={0} />
+        </ul>
+      )}
+      {hasTree && (
+        <ul className="plain tree" aria-label={`${layer.name} folders`}>
+          {root.children.map((c) => (
+            <FolderRow key={c.id} layerId={layer.id} node={c} depth={0} />
+          ))}
+        </ul>
+      )}
       {showWarnings && (
         <ul className="warnings">
           {layer.warnings.map((w) => (
@@ -82,7 +156,7 @@ function LayerRow({ layer }: { layer: Layer }) {
 }
 
 export function LayersPanel() {
-  const { layers, jobs, errors, dismissError } = useLayers();
+  const { layers, jobs, errors, dismissError, activeLayerId } = useLayers();
   return (
     <aside className="left-panel" aria-label="Layers">
       <h2>Layers</h2>
@@ -99,7 +173,7 @@ export function LayersPanel() {
           <JobRow key={j.id} job={j} />
         ))}
         {layers.map((l) => (
-          <LayerRow key={l.id} layer={l} />
+          <LayerRow key={l.id} layer={l} active={l.id === activeLayerId} />
         ))}
       </ul>
       {layers.length === 0 && jobs.length === 0 && (

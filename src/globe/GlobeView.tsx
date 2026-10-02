@@ -6,6 +6,10 @@ import { buildTileUrl } from './basemaps';
 import { useSettings, resolveActiveBasemap } from '../settings/settingsStore';
 import { createImageryProvider } from './imagery';
 import { useStatus } from './statusStore';
+import { useLayers } from '../layers/layerStore';
+import { useSelection } from '../selection/selectionStore';
+import { useUi } from '../ui/uiStore';
+import { installPicking } from './picking';
 import { trackStatus } from './statusTracker';
 import { setViewer as registerViewer } from './viewerRegistry';
 
@@ -37,6 +41,15 @@ export function GlobeView() {
       creditContainer: document.createElement('div'),
     });
     const stopTracking = trackStatus(v);
+    const stopPicking = installPicking(v, (feature) => {
+      if (!feature) {
+        useSelection.getState().clear();
+        return;
+      }
+      useSelection.getState().select(feature.layerId, feature.featureId, 'globe');
+      useLayers.getState().setActiveLayer(feature.layerId);
+      useUi.getState().setDetailsOpen(true);
+    });
     setViewer(v);
     registerViewer(v);
     // Dev-only hook so automated checks can drive the camera (never present in production builds).
@@ -44,6 +57,7 @@ export function GlobeView() {
     return () => {
       registerViewer(null);
       stopTracking();
+      stopPicking();
       v.destroy();
       setViewer(null);
     };

@@ -53,6 +53,11 @@ interface LayerState {
   layers: Layer[];
   jobs: ImportJob[];
   errors: ImportError[];
+  /** The layer shown in the attribute table. */
+  activeLayerId: string | null;
+  setActiveLayer: (id: string | null) => void;
+  setFolderVisible: (layerId: string, folderId: number, visible: boolean) => void;
+  setOpacity: (id: string, opacity: number) => void;
   addLayer: (layer: Layer) => void;
   removeLayer: (id: string) => void;
   setVisible: (id: string, visible: boolean) => void;
@@ -64,14 +69,43 @@ interface LayerState {
   dismissError: (id: number) => void;
 }
 
+/** Returns a copy of the tree with one folder's own visibility changed. */
+export function withFolderVisible(
+  node: FolderNode,
+  folderId: number,
+  visible: boolean,
+): FolderNode {
+  return {
+    ...node,
+    visible: node.id === folderId ? visible : node.visible,
+    children: node.children.map((c) => withFolderVisible(c, folderId, visible)),
+  };
+}
+
 let counter = 0;
 
 export const useLayers = create<LayerState>((set) => ({
   layers: [],
   jobs: [],
   errors: [],
-  addLayer: (layer) => set((s) => ({ layers: [...s.layers, layer] })),
-  removeLayer: (id) => set((s) => ({ layers: s.layers.filter((l) => l.id !== id) })),
+  activeLayerId: null,
+  setActiveLayer: (id) => set({ activeLayerId: id }),
+  setFolderVisible: (layerId, folderId, visible) =>
+    set((s) => ({
+      layers: s.layers.map((l) =>
+        l.id === layerId ? { ...l, tree: withFolderVisible(l.tree, folderId, visible) } : l,
+      ),
+    })),
+  setOpacity: (id, opacity) =>
+    set((s) => ({ layers: s.layers.map((l) => (l.id === id ? { ...l, opacity } : l)) })),
+  addLayer: (layer) => set((s) => ({ layers: [...s.layers, layer], activeLayerId: layer.id })),
+  removeLayer: (id) =>
+    set((s) => {
+      const layers = s.layers.filter((l) => l.id !== id);
+      const activeLayerId =
+        s.activeLayerId === id ? (layers[layers.length - 1]?.id ?? null) : s.activeLayerId;
+      return { layers, activeLayerId };
+    }),
   setVisible: (id, visible) =>
     set((s) => ({ layers: s.layers.map((l) => (l.id === id ? { ...l, visible } : l)) })),
   setLoadMs: (id, ms) =>

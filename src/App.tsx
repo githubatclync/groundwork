@@ -4,11 +4,15 @@ import { GlobeView } from './globe/GlobeView';
 import { getLaunchFiles, listenForDrops } from './io/import';
 import { openFiles, startLayerManager } from './layers/layerManager';
 import { useSettings } from './settings/settingsStore';
+import { AttributeTable } from './table/AttributeTable';
+import { useSelection } from './selection/selectionStore';
 import { Attribution } from './ui/Attribution';
+import { FeatureDetails } from './ui/FeatureDetails';
 import { LayersPanel } from './ui/LayersPanel';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { StatusBar } from './ui/StatusBar';
 import { Toolbar } from './ui/Toolbar';
+import { useUi } from './ui/uiStore';
 
 // Launch files must open once even though React StrictMode runs effects twice in development.
 let launchFilesHandled = false;
@@ -17,6 +21,9 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dropHover, setDropHover] = useState(false);
   const init = useSettings((s) => s.init);
+  const tableOpen = useUi((s) => s.tableOpen);
+  const detailsOpen = useUi((s) => s.detailsOpen);
+  const hasSelection = useSelection((s) => s.selection !== null);
 
   useEffect(() => {
     void init();
@@ -51,11 +58,15 @@ export function App() {
       <Toolbar onOpenSettings={() => setSettingsOpen(true)} />
       <div className="workspace">
         <LayersPanel />
-        <main className="globe-wrap">
-          <GlobeView />
-          <Attribution />
-          {dropHover && <div className="drop-overlay">Drop files to open</div>}
-        </main>
+        <div className="center">
+          <main className="globe-wrap">
+            <GlobeView />
+            <Attribution />
+            {dropHover && <div className="drop-overlay">Drop files to open</div>}
+          </main>
+          {tableOpen && <AttributeTable />}
+        </div>
+        {detailsOpen && hasSelection && <FeatureDetails />}
       </div>
       <StatusBar />
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}

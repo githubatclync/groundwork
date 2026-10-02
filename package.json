@@ -15,10 +15,13 @@
     "bench": "cargo run --release --manifest-path src-tauri/Cargo.toml --example bench -- test-data/generated/big-lines.kml test-data/generated/big-points.kml test-data/generated/big-polys.kmz test-data/generated/mixed.geojson"
   },
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.14.13",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.8.1",
     "@tauri-apps/plugin-store": "^2.5.0",
     "cesium": "^1.130.0",
+    "dompurify": "^3.4.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.0"

@@ -1,5 +1,5 @@
 // Camera helpers.
-import { Rectangle } from 'cesium';
+import { Math as CesiumMath, Rectangle } from 'cesium';
 import type { Bounds } from '../io/types';
 import { getViewer } from './viewerRegistry';
 
@@ -27,4 +27,33 @@ export function zoomToBounds(bounds: Bounds | null, duration = 1.2) {
   const destination = Rectangle.fromDegrees(w, s, e, n);
   if (duration <= 0) viewer.camera.setView({ destination });
   else viewer.camera.flyTo({ destination, duration });
+}
+
+/** The geographic rectangle the camera currently sees, or null when it can't be determined. */
+export function currentViewBounds(): Bounds | null {
+  const viewer = getViewer();
+  const rect = viewer?.camera.computeViewRectangle();
+  if (!rect) return null;
+  return [
+    CesiumMath.toDegrees(rect.west),
+    CesiumMath.toDegrees(rect.south),
+    CesiumMath.toDegrees(rect.east),
+    CesiumMath.toDegrees(rect.north),
+  ];
+}
+
+/** Calls `onChange` (debounced) whenever the camera stops moving. Returns an unsubscribe function. */
+export function onCameraSettled(onChange: () => void, delayMs = 300): () => void {
+  const viewer = getViewer();
+  if (!viewer) return () => undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const handler = () => {
+    clearTimeout(timer);
+    timer = setTimeout(onChange, delayMs);
+  };
+  viewer.camera.moveEnd.addEventListener(handler);
+  return () => {
+    clearTimeout(timer);
+    if (!viewer.isDestroyed()) viewer.camera.moveEnd.removeEventListener(handler);
+  };
 }

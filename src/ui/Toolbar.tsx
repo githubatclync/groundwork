@@ -2,6 +2,7 @@
 import { availability } from '../globe/basemaps';
 import { pickGeodataFiles } from '../io/import';
 import { openFiles } from '../layers/layerManager';
+import { useUi } from './uiStore';
 import {
   allBasemaps,
   resolveActiveBasemap,
@@ -13,6 +14,9 @@ export function Toolbar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const settings = useSettings();
   const keys = selectKeys(settings);
   const active = resolveActiveBasemap(settings.basemapId, settings.mbtiles, keys);
+
+  const tableOpen = useUi((s) => s.tableOpen);
+  const setTableOpen = useUi((s) => s.setTableOpen);
 
   const open = async () => {
     const paths = await pickGeodataFiles();
@@ -43,6 +47,9 @@ export function Toolbar({ onOpenSettings }: { onOpenSettings: () => void }) {
         </select>
       </label>
       <span className="spacer" />
+      <button type="button" aria-pressed={tableOpen} onClick={() => setTableOpen(!tableOpen)}>
+        Table
+      </button>
       <button type="button" onClick={onOpenSettings}>
         Settings
       </button>

@@ -8,6 +8,7 @@ use std::time::Instant;
 
 use tauri::{ipc::Response, Manager, State};
 
+use crate::attributes::{self, AttributePage, FeatureDetail, ViewSpec};
 use crate::binary::encode_geometry;
 use crate::import::{import_path, ImportError};
 use crate::layer::{mime_for_path, LayerData, LayerManifest};
@@ -73,6 +74,62 @@ pub async fn get_geometry(
     })
     .await
     .map_err(join_error)?
+}
+
+/// One page of the attribute table for a sorted/filtered view of a layer.
+#[tauri::command]
+pub async fn get_attributes(
+    layer_id: String,
+    spec: ViewSpec,
+    offset: usize,
+    limit: usize,
+    store: State<'_, LayerStore>,
+) -> Result<AttributePage, ImportError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let layer = store
+            .get(&layer_id)
+            .ok_or(ImportError::UnknownLayer(layer_id))?;
+        let view = attributes::view_for(&layer, &spec);
+        Ok(attributes::page(&layer, &view, offset, limit.min(1000)))
+    })
+    .await
+    .map_err(join_error)?
+}
+
+/// Row index of a feature within a view (None if the view does not contain it).
+#[tauri::command]
+pub async fn find_row(
+    layer_id: String,
+    spec: ViewSpec,
+    feature_id: u32,
+    store: State<'_, LayerStore>,
+) -> Result<Option<usize>, ImportError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let layer = store
+            .get(&layer_id)
+            .ok_or(ImportError::UnknownLayer(layer_id))?;
+        let view = attributes::view_for(&layer, &spec);
+        Ok(attributes::row_of(&view, feature_id))
+    })
+    .await
+    .map_err(join_error)?
+}
+
+/// Full details of one feature: attributes, description, and geometry summary.
+#[tauri::command]
+pub fn get_feature(
+    layer_id: String,
+    feature_id: u32,
+    store: State<'_, LayerStore>,
+) -> Result<FeatureDetail, ImportError> {
+    let layer = store
+        .get(&layer_id)
+        .ok_or_else(|| ImportError::UnknownLayer(layer_id.clone()))?;
+    attributes::feature_detail(&layer, feature_id).ok_or(ImportError::UnknownLayer(format!(
+        "{layer_id} feature {feature_id}"
+    )))
 }
 
 /// Supported files passed on the command line (e.g. via "Open with" or a terminal).
