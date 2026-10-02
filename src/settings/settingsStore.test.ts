@@ -26,6 +26,17 @@ describe('sanitizeSettings', () => {
   });
 });
 
+describe('unit settings', () => {
+  it('default to metric/auto and reject unknown values', () => {
+    expect(DEFAULT_SETTINGS.unitSystem).toBe('metric');
+    expect(DEFAULT_SETTINGS.areaUnit).toBe('auto');
+    const s = sanitizeSettings({ unitSystem: 'furlongs', areaUnit: 'acres' });
+    expect(s.unitSystem).toBe('metric');
+    expect(s.areaUnit).toBe('acres');
+    expect(sanitizeSettings({ unitSystem: 'nautical' }).unitSystem).toBe('nautical');
+  });
+});
+
 describe('resolveActiveBasemap', () => {
   it('falls back to OSM when the saved basemap needs a missing key', () => {
     expect(resolveActiveBasemap('esri-imagery', [], noKeys).id).toBe('osm');

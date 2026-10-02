@@ -9,7 +9,11 @@ import { useStatus } from './statusStore';
 import { useLayers } from '../layers/layerStore';
 import { useSelection } from '../selection/selectionStore';
 import { useUi } from '../ui/uiStore';
+import { useTool } from '../tools/toolStore';
+import { installMeasureInteraction } from './measureInteraction';
+import { installMeasureOverlay } from './measureOverlay';
 import { installPicking } from './picking';
+import { installUserLayerOverlay } from './userLayerOverlay';
 import { trackStatus } from './statusTracker';
 import { setViewer as registerViewer } from './viewerRegistry';
 
@@ -41,15 +45,23 @@ export function GlobeView() {
       creditContainer: document.createElement('div'),
     });
     const stopTracking = trackStatus(v);
-    const stopPicking = installPicking(v, (feature) => {
-      if (!feature) {
-        useSelection.getState().clear();
-        return;
-      }
-      useSelection.getState().select(feature.layerId, feature.featureId, 'globe');
-      useLayers.getState().setActiveLayer(feature.layerId);
-      useUi.getState().setDetailsOpen(true);
-    });
+    const stopMeasure = installMeasureInteraction(v);
+    const stopMeasureOverlay = installMeasureOverlay(v);
+    const stopUserLayer = installUserLayerOverlay(v);
+    const stopPicking = installPicking(
+      v,
+      (feature) => {
+        if (!feature) {
+          useSelection.getState().clear();
+          return;
+        }
+        useSelection.getState().select(feature.layerId, feature.featureId, 'globe');
+        useLayers.getState().setActiveLayer(feature.layerId);
+        useUi.getState().setDetailsOpen(true);
+      },
+      // Clicks belong to the active tool, not to feature picking.
+      () => useTool.getState().tool === 'none',
+    );
     setViewer(v);
     registerViewer(v);
     // Dev-only hook so automated checks can drive the camera (never present in production builds).
@@ -58,6 +70,9 @@ export function GlobeView() {
       registerViewer(null);
       stopTracking();
       stopPicking();
+      stopMeasure();
+      stopMeasureOverlay();
+      stopUserLayer();
       v.destroy();
       setViewer(null);
     };

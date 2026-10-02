@@ -2,6 +2,7 @@
 import { availability } from '../globe/basemaps';
 import { pickGeodataFiles } from '../io/import';
 import { openFiles } from '../layers/layerManager';
+import { useTool, type Tool } from '../tools/toolStore';
 import { useUi } from './uiStore';
 import {
   allBasemaps,
@@ -15,6 +16,8 @@ export function Toolbar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const keys = selectKeys(settings);
   const active = resolveActiveBasemap(settings.basemapId, settings.mbtiles, keys);
 
+  const tool = useTool((s) => s.tool);
+  const setTool = useTool((s) => s.setTool);
   const tableOpen = useUi((s) => s.tableOpen);
   const setTableOpen = useUi((s) => s.setTableOpen);
 
@@ -46,6 +49,25 @@ export function Toolbar({ onOpenSettings }: { onOpenSettings: () => void }) {
           })}
         </select>
       </label>
+      <div className="tool-group" role="group" aria-label="Measure tools">
+        {(
+          [
+            ['measure-distance', 'Distance'],
+            ['measure-path', 'Path'],
+            ['measure-area', 'Area'],
+          ] as [Tool, string][]
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={tool === id}
+            title={`Measure ${label.toLowerCase()}`}
+            onClick={() => setTool(tool === id ? 'none' : id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <span className="spacer" />
       <button type="button" aria-pressed={tableOpen} onClick={() => setTableOpen(!tableOpen)}>
         Table

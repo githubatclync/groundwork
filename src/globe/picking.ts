@@ -31,10 +31,11 @@ export function featureFromPick(picked: unknown): PickedFeature | null {
 export function installPicking(
   viewer: Viewer,
   onPick: (feature: PickedFeature | null) => void,
+  enabled: () => boolean = () => true,
 ): () => void {
   const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
   handler.setInputAction((click: { position: Cartesian2 }) => {
-    onPick(featureFromPick(viewer.scene.pick(click.position)));
+    if (enabled()) onPick(featureFromPick(viewer.scene.pick(click.position)));
   }, ScreenSpaceEventType.LEFT_CLICK);
   return () => handler.destroy();
 }

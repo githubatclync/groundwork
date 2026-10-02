@@ -12,11 +12,14 @@ import {
   type MbtilesEntry,
 } from '../globe/basemaps';
 import type { CoordFormat } from '../globe/coords';
+import type { AreaUnit, UnitSystem } from '../tools/units';
 import { closeMbtiles, openMbtiles, pickMbtilesFile } from '../io/mbtiles';
 import { inTauri, loadAll, saveValues } from './persist';
 
 export interface PersistedSettings extends Keys {
   coordFormat: CoordFormat;
+  unitSystem: UnitSystem;
+  areaUnit: AreaUnit;
   showFps: boolean;
   basemapId: string;
   mbtilesPaths: string[];
@@ -27,6 +30,8 @@ export const DEFAULT_SETTINGS: PersistedSettings = {
   esriKey: '',
   mapboxToken: '',
   coordFormat: 'dd',
+  unitSystem: 'metric',
+  areaUnit: 'auto',
   showFps: false,
   basemapId: OSM_ID,
   mbtilesPaths: [],
@@ -43,6 +48,14 @@ export function sanitizeSettings(raw: Record<string, unknown>): PersistedSetting
     esriKey: str('esriKey'),
     mapboxToken: str('mapboxToken'),
     coordFormat: fmt === 'dd' || fmt === 'dms' || fmt === 'utm' ? fmt : d.coordFormat,
+    unitSystem:
+      raw.unitSystem === 'metric' || raw.unitSystem === 'imperial' || raw.unitSystem === 'nautical'
+        ? raw.unitSystem
+        : d.unitSystem,
+    areaUnit:
+      raw.areaUnit === 'auto' || raw.areaUnit === 'hectares' || raw.areaUnit === 'acres'
+        ? raw.areaUnit
+        : d.areaUnit,
     showFps: typeof raw.showFps === 'boolean' ? raw.showFps : d.showFps,
     basemapId: str('basemapId'),
     mbtilesPaths: Array.isArray(raw.mbtilesPaths)

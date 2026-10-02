@@ -5,13 +5,16 @@ import { getFeature, type FeatureDetail } from '../io/attributes';
 import { useLayers } from '../layers/layerStore';
 import { useSelection } from '../selection/selectionStore';
 import { descriptionDocument, sanitizeDescription } from './descriptionHtml';
-import { formatArea, formatLength } from './format';
+import { useSettings } from '../settings/settingsStore';
+import { formatArea, formatDistance } from '../tools/units';
 import { useUi } from './uiStore';
 
 export function FeatureDetails() {
   const selection = useSelection((s) => s.selection);
   const layer = useLayers((s) => s.layers.find((l) => l.id === selection?.layerId));
   const setOpen = useUi((s) => s.setDetailsOpen);
+  const unitSystem = useSettings((s) => s.unitSystem);
+  const areaUnit = useSettings((s) => s.areaUnit);
   const [detail, setDetail] = useState<FeatureDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,19 +66,19 @@ export function FeatureDetails() {
             {g.lengthM !== null && (
               <>
                 <dt>Length</dt>
-                <dd>{formatLength(g.lengthM)}</dd>
+                <dd>{formatDistance(g.lengthM, unitSystem)}</dd>
               </>
             )}
             {g.perimeterM !== null && (
               <>
                 <dt>Perimeter</dt>
-                <dd>{formatLength(g.perimeterM)}</dd>
+                <dd>{formatDistance(g.perimeterM, unitSystem)}</dd>
               </>
             )}
             {g.areaM2 !== null && (
               <>
                 <dt>Area</dt>
-                <dd>{formatArea(g.areaM2)}</dd>
+                <dd>{formatArea(g.areaM2, unitSystem, areaUnit)}</dd>
               </>
             )}
           </dl>

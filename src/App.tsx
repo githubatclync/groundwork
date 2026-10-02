@@ -11,7 +11,10 @@ import { FeatureDetails } from './ui/FeatureDetails';
 import { LayersPanel } from './ui/LayersPanel';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { StatusBar } from './ui/StatusBar';
+import { MeasurePanel } from './ui/MeasurePanel';
 import { Toolbar } from './ui/Toolbar';
+import { measureModeOf, useTool } from './tools/toolStore';
+import { useToolKeys } from './tools/useToolKeys';
 import { useUi } from './ui/uiStore';
 
 // Launch files must open once even though React StrictMode runs effects twice in development.
@@ -24,6 +27,8 @@ export function App() {
   const tableOpen = useUi((s) => s.tableOpen);
   const detailsOpen = useUi((s) => s.detailsOpen);
   const hasSelection = useSelection((s) => s.selection !== null);
+  const measuring = useTool((s) => measureModeOf(s.tool) !== null);
+  useToolKeys();
 
   useEffect(() => {
     void init();
@@ -59,14 +64,14 @@ export function App() {
       <div className="workspace">
         <LayersPanel />
         <div className="center">
-          <main className="globe-wrap">
+          <main className={`globe-wrap${measuring ? ' measuring' : ''}`}>
             <GlobeView />
             <Attribution />
             {dropHover && <div className="drop-overlay">Drop files to open</div>}
           </main>
           {tableOpen && <AttributeTable />}
         </div>
-        {detailsOpen && hasSelection && <FeatureDetails />}
+        {measuring ? <MeasurePanel /> : detailsOpen && hasSelection && <FeatureDetails />}
       </div>
       <StatusBar />
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}

@@ -5,6 +5,7 @@ import { zoomToBounds } from '../globe/camera';
 import type { FolderNode } from '../io/types';
 import { removeLayer } from '../layers/layerManager';
 import { useLayers, type ImportJob, type Layer } from '../layers/layerStore';
+import { useUserLayer } from '../layers/userLayerStore';
 
 const PHASE_LABEL: Record<ImportJob['phase'], string> = {
   reading: 'Reading file…',
@@ -155,6 +156,41 @@ function LayerRow({ layer, active }: { layer: Layer; active: boolean }) {
   );
 }
 
+function UserLayerRow() {
+  const { features, visible, setVisible, removeFeature } = useUserLayer();
+  if (features.length === 0) return null;
+  return (
+    <li className="layer" aria-label="My Places">
+      <div className="layer-head">
+        <label className="layer-name">
+          <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} />
+          <span>My Places</span>
+        </label>
+        <span className="muted">{features.length}</span>
+      </div>
+      <ul className="plain tree">
+        {features.map((f) => (
+          <li key={f.id}>
+            <div className="folder-row">
+              <span className="folder-name" title={f.description}>
+                {f.name}
+              </span>
+              <button
+                type="button"
+                title="Remove"
+                aria-label={`Remove ${f.name}`}
+                onClick={() => removeFeature(f.id)}
+              >
+                ✕
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </li>
+  );
+}
+
 export function LayersPanel() {
   const { layers, jobs, errors, dismissError, activeLayerId } = useLayers();
   return (
@@ -175,6 +211,7 @@ export function LayersPanel() {
         {layers.map((l) => (
           <LayerRow key={l.id} layer={l} active={l.id === activeLayerId} />
         ))}
+        <UserLayerRow />
       </ul>
       {layers.length === 0 && jobs.length === 0 && (
         <p className="muted">Drop a KML, KMZ, GeoJSON, or GPX file on the window, or use Open.</p>
