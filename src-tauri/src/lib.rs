@@ -2,6 +2,7 @@
 pub mod attributes;
 pub mod binary;
 pub mod commands;
+pub mod export;
 pub mod geo;
 pub mod geojson;
 pub mod gpx;
@@ -29,6 +30,9 @@ pub fn run() {
             commands::find_row,
             commands::get_feature,
             commands::get_launch_files,
+            commands::export_layer_file,
+            commands::export_user_layer,
+            commands::layer_to_user,
             commands::remove_layer
         ])
         .run(tauri::generate_context!())

@@ -10,6 +10,10 @@ import { useLayers } from '../layers/layerStore';
 import { useSelection } from '../selection/selectionStore';
 import { useUi } from '../ui/uiStore';
 import { useTool } from '../tools/toolStore';
+import { useUserLayer } from '../layers/userLayerStore';
+import { installDraftOverlay } from './draftOverlay';
+import { installDrawInteraction } from './drawInteraction';
+import { installEditInteraction } from './editInteraction';
 import { installMeasureInteraction } from './measureInteraction';
 import { installMeasureOverlay } from './measureOverlay';
 import { installPicking } from './picking';
@@ -48,6 +52,9 @@ export function GlobeView() {
     const stopMeasure = installMeasureInteraction(v);
     const stopMeasureOverlay = installMeasureOverlay(v);
     const stopUserLayer = installUserLayerOverlay(v);
+    const stopDraw = installDrawInteraction(v);
+    const stopDraft = installDraftOverlay(v);
+    const stopEdit = installEditInteraction(v);
     const stopPicking = installPicking(
       v,
       (feature) => {
@@ -61,6 +68,7 @@ export function GlobeView() {
       },
       // Clicks belong to the active tool, not to feature picking.
       () => useTool.getState().tool === 'none',
+      (userId) => useUserLayer.getState().select(userId),
     );
     setViewer(v);
     registerViewer(v);
@@ -73,6 +81,9 @@ export function GlobeView() {
       stopMeasure();
       stopMeasureOverlay();
       stopUserLayer();
+      stopDraw();
+      stopDraft();
+      stopEdit();
       v.destroy();
       setViewer(null);
     };

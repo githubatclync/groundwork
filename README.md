@@ -53,3 +53,13 @@ parser); geometry reaches the frontend as one binary buffer (layout in `src-taur
 - Icons and overlay images inside a KMZ (or next to a KML) are served through the `kmz://` URI protocol.
   Images hosted online are never downloaded (offline-first); such icons fall back to a plain marker.
 - In development builds, `window.__viewer` exposes the Cesium viewer for automated checks.
+
+## Drawing, editing, and saving
+
+- **Draw** points, lines, and polygons into the "My Places" layer (toolbar: Point / Line / Polygon). Double-click or Enter
+  finishes, Escape cancels. **Edit** vertices: drag a handle, click a midpoint handle to insert a vertex, Alt-click a vertex to
+  delete it. Name, description, color/width/fill/icon, and custom attributes are edited in the right panel.
+- **Undo / redo** with Ctrl/Cmd+Z and Shift+Ctrl/Cmd+Z (100 steps; a vertex drag or a burst of typing is one step).
+- **Make editable copy** (the pencil on an imported layer) converts up to 10,000 features into My Places.
+- **Export** (toolbar) writes any layer as KMZ, KML, or GeoJSON. KMZ bundles icons and overlay images; KML cannot, and says so.
+  Exports keep the folder tree, styles, and ExtendedData. The built-in point icons come from `test-data/make-builtin-icons.ts`.

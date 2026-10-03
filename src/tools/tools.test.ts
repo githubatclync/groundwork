@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useUserLayer } from '../layers/userLayerStore';
+import { resetUserLayer, useUserLayer } from '../layers/userLayerStore';
 import { measure } from './measure';
 import { useMeasure } from './measureStore';
 import { measurementToFeature } from './saveMeasurement';
+import { useDraft } from './draftStore';
 import { measureModeOf, useTool } from './toolStore';
 import { formatArea, formatDistance } from './units';
 
@@ -99,6 +100,13 @@ describe('measure store', () => {
 });
 
 describe('tool store', () => {
+  it('switching tools also abandons a line being drawn', () => {
+    useTool.getState().setTool('draw-line');
+    useDraft.getState().addPoint([1, 2]);
+    useTool.getState().setTool('draw-polygon');
+    expect(useDraft.getState().points).toEqual([]);
+    useTool.getState().setTool('none');
+  });
   it('switching tools abandons the measurement in progress', () => {
     useTool.getState().setTool('measure-path');
     useMeasure.getState().addPoint('path', { lon: 0, lat: 0 });
@@ -125,7 +133,7 @@ describe('save as feature', () => {
     );
     expect(f.kind).toBe('line');
     expect(f.name).toBe('Path 110.574 km');
-    expect(Number(f.attrs.length_m)).toBeCloseTo(110_574.39, 0);
+    expect(Number(Object.fromEntries(f.attrs).length_m)).toBeCloseTo(110_574.39, 0);
     expect(f.coords).toEqual([
       [0, 0],
       [0, 1],
@@ -146,20 +154,22 @@ describe('save as feature', () => {
     expect(f.kind).toBe('polygon');
     expect(f.name).toMatch(/^Area .* ac$/);
     expect(f.description).toContain('Perimeter:');
-    expect(Number(f.attrs.area_m2)).toBeGreaterThan(1.2e10);
+    expect(Number(Object.fromEntries(f.attrs).area_m2)).toBeGreaterThan(1.2e10);
   });
 
   it('adds to the user layer', () => {
-    useUserLayer.getState().clear();
-    const id = useUserLayer.getState().addFeature({
-      name: 'x',
-      kind: 'line',
-      coords: [],
-      description: '',
-      attrs: {},
-    });
-    expect(useUserLayer.getState().features.map((f) => f.id)).toEqual([id]);
-    useUserLayer.getState().removeFeature(id);
+    resetUserLayer();
+    const f = measurementToFeature(
+      measure('path', [
+        { lon: 0, lat: 0 },
+        { lon: 0, lat: 1 },
+      ]),
+      'metric',
+      'auto',
+    );
+    const id = useUserLayer.getState().add(f);
+    expect(useUserLayer.getState().features.map((x) => x.id)).toEqual([id]);
+    useUserLayer.getState().remove(id);
     expect(useUserLayer.getState().features).toEqual([]);
   });
 });

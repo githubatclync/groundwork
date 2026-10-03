@@ -2,6 +2,7 @@
 import { availability } from '../globe/basemaps';
 import { pickGeodataFiles } from '../io/import';
 import { openFiles } from '../layers/layerManager';
+import { useUserLayer } from '../layers/userLayerStore';
 import { useTool, type Tool } from '../tools/toolStore';
 import { useUi } from './uiStore';
 import {
@@ -11,12 +12,20 @@ import {
   useSettings,
 } from '../settings/settingsStore';
 
-export function Toolbar({ onOpenSettings }: { onOpenSettings: () => void }) {
+export function Toolbar({
+  onOpenSettings,
+  onExport,
+}: {
+  onOpenSettings: () => void;
+  onExport: () => void;
+}) {
   const settings = useSettings();
   const keys = selectKeys(settings);
   const active = resolveActiveBasemap(settings.basemapId, settings.mbtiles, keys);
 
   const tool = useTool((s) => s.tool);
+  const canUndo = useUserLayer((s) => s.past.length > 0);
+  const canRedo = useUserLayer((s) => s.future.length > 0);
   const setTool = useTool((s) => s.setTool);
   const tableOpen = useUi((s) => s.tableOpen);
   const setTableOpen = useUi((s) => s.setTableOpen);
@@ -68,7 +77,48 @@ export function Toolbar({ onOpenSettings }: { onOpenSettings: () => void }) {
           </button>
         ))}
       </div>
+      <div className="tool-group" role="group" aria-label="Draw tools">
+        {(
+          [
+            ['draw-point', 'Point', 'Draw a point'],
+            ['draw-line', 'Line', 'Draw a line'],
+            ['draw-polygon', 'Polygon', 'Draw a polygon'],
+            ['edit', 'Edit', 'Edit vertices of the selected feature'],
+          ] as [Tool, string, string][]
+        ).map(([id, label, title]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={tool === id}
+            title={title}
+            onClick={() => setTool(tool === id ? 'none' : id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="tool-group" role="group" aria-label="History">
+        <button
+          type="button"
+          title="Undo (Ctrl+Z)"
+          disabled={!canUndo}
+          onClick={() => useUserLayer.getState().undo()}
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          title="Redo (Shift+Ctrl+Z)"
+          disabled={!canRedo}
+          onClick={() => useUserLayer.getState().redo()}
+        >
+          Redo
+        </button>
+      </div>
       <span className="spacer" />
+      <button type="button" onClick={onExport}>
+        Export…
+      </button>
       <button type="button" aria-pressed={tableOpen} onClick={() => setTableOpen(!tableOpen)}>
         Table
       </button>

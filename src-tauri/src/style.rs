@@ -12,6 +12,16 @@ pub fn kml_color_to_rgba(kml: &str) -> Option<String> {
     Some(format!("{}{}{}{}", &s[6..8], &s[4..6], &s[2..4], &s[0..2]))
 }
 
+/// Converts `rrggbbaa` back to KML's `aabbggrr`. Returns None if it is not 8 hex digits.
+pub fn rgba_to_kml_color(rgba: &str) -> Option<String> {
+    let s = rgba.trim();
+    if s.len() != 8 || !s.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let s = s.to_ascii_lowercase();
+    Some(format!("{}{}{}{}", &s[6..8], &s[4..6], &s[2..4], &s[0..2]))
+}
+
 pub const WHITE: &str = "ffffffff";
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -145,6 +155,18 @@ mod tests {
         // Distinct channels prove the byte order: a=11 b=22 g=33 r=44.
         assert_eq!(kml_color_to_rgba("11223344").as_deref(), Some("44332211"));
         assert_eq!(kml_color_to_rgba(" 7FABCDEF ").as_deref(), Some("efcdab7f"));
+    }
+
+    #[test]
+    fn rgba_to_kml_is_the_inverse() {
+        assert_eq!(rgba_to_kml_color("ff0000ff").as_deref(), Some("ff0000ff")); // opaque red
+        assert_eq!(rgba_to_kml_color("0000ffff").as_deref(), Some("ffff0000")); // opaque blue
+        assert_eq!(rgba_to_kml_color("44332211").as_deref(), Some("11223344"));
+        for c in ["11223344", "8000ff00", "ffabcdef"] {
+            let rgba = kml_color_to_rgba(c).unwrap();
+            assert_eq!(rgba_to_kml_color(&rgba).as_deref(), Some(c));
+        }
+        assert_eq!(rgba_to_kml_color("xyz"), None);
     }
 
     #[test]

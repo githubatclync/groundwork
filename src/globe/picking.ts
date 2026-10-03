@@ -27,15 +27,28 @@ export function featureFromPick(picked: unknown): PickedFeature | null {
   return asFeature(p.id) ?? asFeature(p.primitive?.id);
 }
 
+/** The user-layer feature id for a pick of one of its entities (ids look like "user:12"), else null. */
+export function userFeatureFromPick(picked: unknown): number | null {
+  const id = (picked as { id?: { id?: unknown } } | null | undefined)?.id?.id;
+  if (typeof id !== 'string') return null;
+  const m = /^user:(\d+)$/.exec(id);
+  return m ? Number(m[1]) : null;
+}
+
 /** Calls `onPick` with the clicked feature, or null when empty space was clicked. */
 export function installPicking(
   viewer: Viewer,
   onPick: (feature: PickedFeature | null) => void,
   enabled: () => boolean = () => true,
+  onPickUser: (id: number) => void = () => undefined,
 ): () => void {
   const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
   handler.setInputAction((click: { position: Cartesian2 }) => {
-    if (enabled()) onPick(featureFromPick(viewer.scene.pick(click.position)));
+    if (!enabled()) return;
+    const picked = viewer.scene.pick(click.position);
+    const user = userFeatureFromPick(picked);
+    if (user !== null) onPickUser(user);
+    else onPick(featureFromPick(picked));
   }, ScreenSpaceEventType.LEFT_CLICK);
   return () => handler.destroy();
 }

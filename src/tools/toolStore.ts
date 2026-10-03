@@ -1,6 +1,7 @@
 // The active tool. Switching tools abandons any measurement in progress.
 import { create } from 'zustand';
 import type { MeasureMode } from './measure';
+import { useDraft } from './draftStore';
 import { useMeasure } from './measureStore';
 
 export type Tool =
@@ -22,7 +23,9 @@ export const useTool = create<ToolState>((set, get) => ({
   tool: 'none',
   setTool: (tool) => {
     if (tool === get().tool) return;
+    // Abandon anything half-finished: a measurement or a line/polygon being drawn.
     useMeasure.getState().reset();
+    useDraft.getState().reset();
     set({ tool });
   },
 }));

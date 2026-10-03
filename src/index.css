@@ -567,3 +567,72 @@ dl.kv.big dd {
 .small {
   font-size: 11px;
 }
+
+.toolbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.link-button:hover {
+  text-decoration: underline;
+  border: 0;
+}
+.user-row.selected {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 4px;
+}
+.user-row {
+  justify-content: space-between;
+}
+.place-editor textarea,
+.place-editor input:not([type='color']):not([type='range']) {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.place-editor .field {
+  margin: 8px 0;
+}
+.style-grid {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.style-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.attr-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.attr-row input {
+  min-width: 0;
+}
+fieldset.formats {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.export-result {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}

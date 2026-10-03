@@ -43,7 +43,7 @@ export function MeasurePanel() {
     if (!canSave) return;
     const m = measure(mode, points);
     const feature = measurementToFeature(m, unitSystem, areaUnit);
-    useUserLayer.getState().addFeature(feature);
+    useUserLayer.getState().add(feature);
     useMeasure.getState().reset();
     setSavedName(feature.name);
   };

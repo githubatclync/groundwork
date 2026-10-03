@@ -1,25 +1,14 @@
 // Mouse handling for the measure tools: click adds a point, moving shows the rubber band, and a
 // double-click finishes a path or area. Keyboard handling (Enter/Escape) lives in tools/useToolKeys.
 import {
-  Math as CesiumMath,
-  Cartographic,
   ScreenSpaceEventHandler,
   ScreenSpaceEventType,
   type Cartesian2,
   type Viewer,
 } from 'cesium';
-import type { LonLat } from '../tools/geodesy';
 import { useMeasure } from '../tools/measureStore';
 import { measureModeOf, useTool } from '../tools/toolStore';
-
-/** The ground position under a screen point (terrain-aware), or null over empty space. */
-function lonLatAt(viewer: Viewer, position: Cartesian2): LonLat | null {
-  const ray = viewer.camera.getPickRay(position);
-  const hit = ray ? viewer.scene.globe.pick(ray, viewer.scene) : undefined;
-  if (!hit) return null;
-  const c = Cartographic.fromCartesian(hit);
-  return { lon: CesiumMath.toDegrees(c.longitude), lat: CesiumMath.toDegrees(c.latitude) };
-}
+import { lonLatAt } from './lonLat';
 
 export function installMeasureInteraction(viewer: Viewer): () => void {
   // Cesium zooms in on double-click by default; the tools use it to finish a measurement.
@@ -30,14 +19,15 @@ export function installMeasureInteraction(viewer: Viewer): () => void {
     const mode = measureModeOf(useTool.getState().tool);
     if (!mode) return;
     const p = lonLatAt(viewer, click.position);
-    if (p) useMeasure.getState().addPoint(mode, p);
+    if (p) useMeasure.getState().addPoint(mode, { lon: p[0], lat: p[1] });
   }, ScreenSpaceEventType.LEFT_CLICK);
 
   handler.setInputAction((move: { endPosition: Cartesian2 }) => {
     const mode = measureModeOf(useTool.getState().tool);
     const m = useMeasure.getState();
     if (!mode || m.finished || m.points.length === 0) return;
-    m.setCursor(lonLatAt(viewer, move.endPosition));
+    const p = lonLatAt(viewer, move.endPosition);
+    m.setCursor(p ? { lon: p[0], lat: p[1] } : null);
   }, ScreenSpaceEventType.MOUSE_MOVE);
 
   handler.setInputAction(() => {

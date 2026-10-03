@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { zoomToBounds } from '../globe/camera';
 import type { FolderNode } from '../io/types';
+import { makeEditableCopy } from '../layers/editableCopy';
 import { removeLayer } from '../layers/layerManager';
 import { useLayers, type ImportJob, type Layer } from '../layers/layerStore';
 import { useUserLayer } from '../layers/userLayerStore';
@@ -105,6 +106,14 @@ function LayerRow({ layer, active }: { layer: Layer; active: boolean }) {
             ⚠ {warningTotal}
           </button>
         )}
+        <button
+          type="button"
+          title="Make editable copy (up to 10,000 features)"
+          aria-label={`Make editable copy of ${layer.name}`}
+          onClick={() => void makeEditableCopy(layer.id)}
+        >
+          ✎
+        </button>
         <button type="button" title="Zoom to layer" onClick={() => zoomToBounds(layer.bounds)}>
           ⌖
         </button>
@@ -157,7 +166,7 @@ function LayerRow({ layer, active }: { layer: Layer; active: boolean }) {
 }
 
 function UserLayerRow() {
-  const { features, visible, setVisible, removeFeature } = useUserLayer();
+  const { features, visible, setVisible, remove, select, selectedId } = useUserLayer();
   if (features.length === 0) return null;
   return (
     <li className="layer" aria-label="My Places">
@@ -171,15 +180,20 @@ function UserLayerRow() {
       <ul className="plain tree">
         {features.map((f) => (
           <li key={f.id}>
-            <div className="folder-row">
-              <span className="folder-name" title={f.description}>
+            <div className={`folder-row user-row${f.id === selectedId ? ' selected' : ''}`}>
+              <button
+                type="button"
+                className="link-button folder-name"
+                title={f.description}
+                onClick={() => select(f.id)}
+              >
                 {f.name}
-              </span>
+              </button>
               <button
                 type="button"
                 title="Remove"
                 aria-label={`Remove ${f.name}`}
-                onClick={() => removeFeature(f.id)}
+                onClick={() => remove(f.id)}
               >
                 ✕
               </button>

@@ -11,7 +11,12 @@ import { FeatureDetails } from './ui/FeatureDetails';
 import { LayersPanel } from './ui/LayersPanel';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { StatusBar } from './ui/StatusBar';
+import { ExportDialog } from './ui/ExportDialog';
 import { MeasurePanel } from './ui/MeasurePanel';
+import { PlaceEditor } from './ui/PlaceEditor';
+import { useUserLayer } from './layers/userLayerStore';
+import { linkSelections } from './selection/selectionLink';
+import { drawKindOf } from './tools/draftStore';
 import { Toolbar } from './ui/Toolbar';
 import { measureModeOf, useTool } from './tools/toolStore';
 import { useToolKeys } from './tools/useToolKeys';
@@ -28,7 +33,13 @@ export function App() {
   const detailsOpen = useUi((s) => s.detailsOpen);
   const hasSelection = useSelection((s) => s.selection !== null);
   const measuring = useTool((s) => measureModeOf(s.tool) !== null);
+  const userSelected = useUserLayer((s) => s.selectedId !== null);
+  const placeTool = useTool((s) => drawKindOf(s.tool) !== null || s.tool === 'edit');
+  const placeEditing = userSelected || placeTool;
+  const drawing = useTool((s) => s.tool !== 'none');
+  const [exportOpen, setExportOpen] = useState(false);
   useToolKeys();
+  useEffect(() => linkSelections(), []);
 
   useEffect(() => {
     void init();
@@ -60,20 +71,27 @@ export function App() {
 
   return (
     <div className="app">
-      <Toolbar onOpenSettings={() => setSettingsOpen(true)} />
+      <Toolbar onOpenSettings={() => setSettingsOpen(true)} onExport={() => setExportOpen(true)} />
       <div className="workspace">
         <LayersPanel />
         <div className="center">
-          <main className={`globe-wrap${measuring ? ' measuring' : ''}`}>
+          <main className={`globe-wrap${drawing ? ' measuring' : ''}`}>
             <GlobeView />
             <Attribution />
             {dropHover && <div className="drop-overlay">Drop files to open</div>}
           </main>
           {tableOpen && <AttributeTable />}
         </div>
-        {measuring ? <MeasurePanel /> : detailsOpen && hasSelection && <FeatureDetails />}
+        {measuring ? (
+          <MeasurePanel />
+        ) : placeEditing ? (
+          <PlaceEditor />
+        ) : (
+          detailsOpen && hasSelection && <FeatureDetails />
+        )}
       </div>
       <StatusBar />
+      {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
     </div>
   );

@@ -10,6 +10,7 @@ use tauri::{ipc::Response, Manager, State};
 
 use crate::attributes::{self, AttributePage, FeatureDetail, ViewSpec};
 use crate::binary::encode_geometry;
+use crate::export::{self, ExportError, ExportReport, UserFeatureDto};
 use crate::import::{import_path, ImportError};
 use crate::layer::{mime_for_path, LayerData, LayerManifest};
 
@@ -130,6 +131,57 @@ pub fn get_feature(
     attributes::feature_detail(&layer, feature_id).ok_or(ImportError::UnknownLayer(format!(
         "{layer_id} feature {feature_id}"
     )))
+}
+
+/// Exports an imported layer to .kml, .kmz, or .geojson (chosen by the file extension).
+#[tauri::command]
+pub async fn export_layer_file(
+    layer_id: String,
+    path: String,
+    store: State<'_, LayerStore>,
+) -> Result<ExportReport, ExportError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let layer = store
+            .get(&layer_id)
+            .ok_or(ExportError::UnknownLayer(layer_id))?;
+        export::export_layer(&layer, std::path::Path::new(&path))
+    })
+    .await
+    .map_err(|e| ExportError::Io {
+        file: "export task".into(),
+        message: e.to_string(),
+    })?
+}
+
+/// Exports the user-drawn layer ("My Places").
+#[tauri::command]
+pub async fn export_user_layer(
+    name: String,
+    features: Vec<UserFeatureDto>,
+    path: String,
+) -> Result<ExportReport, ExportError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let layer = export::user_features_to_layer(&name, &features);
+        export::export_layer(&layer, std::path::Path::new(&path))
+    })
+    .await
+    .map_err(|e| ExportError::Io {
+        file: "export task".into(),
+        message: e.to_string(),
+    })?
+}
+
+/// Converts an imported layer into editable features ("Make editable copy"; limited in size).
+#[tauri::command]
+pub fn layer_to_user(
+    layer_id: String,
+    store: State<'_, LayerStore>,
+) -> Result<Vec<UserFeatureDto>, ExportError> {
+    let layer = store
+        .get(&layer_id)
+        .ok_or(ExportError::UnknownLayer(layer_id))?;
+    export::layer_to_user_features(&layer)
 }
 
 /// Supported files passed on the command line (e.g. via "Open with" or a terminal).
