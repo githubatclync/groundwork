@@ -21,6 +21,8 @@ export interface PersistedSettings extends Keys {
   unitSystem: UnitSystem;
   areaUnit: AreaUnit;
   showFps: boolean;
+  /** Cesium OSM Buildings (3D Tiles); online only and needs the ion token. */
+  osmBuildings: boolean;
   basemapId: string;
   mbtilesPaths: string[];
   /** Most recently used project files, newest first. */
@@ -44,6 +46,7 @@ export const DEFAULT_SETTINGS: PersistedSettings = {
   unitSystem: 'metric',
   areaUnit: 'auto',
   showFps: false,
+  osmBuildings: false,
   basemapId: OSM_ID,
   mbtilesPaths: [],
   recentProjects: [],
@@ -69,6 +72,7 @@ export function sanitizeSettings(raw: Record<string, unknown>): PersistedSetting
         ? raw.areaUnit
         : d.areaUnit,
     showFps: typeof raw.showFps === 'boolean' ? raw.showFps : d.showFps,
+    osmBuildings: typeof raw.osmBuildings === 'boolean' ? raw.osmBuildings : d.osmBuildings,
     basemapId: str('basemapId'),
     recentProjects: Array.isArray(raw.recentProjects)
       ? raw.recentProjects

@@ -7,6 +7,9 @@ export function Attribution() {
   return (
     <div className="attribution" aria-label="Map attribution">
       {active.attribution}
+      {settings.osmBuildings &&
+        settings.ionToken.trim() &&
+        ' · 3D buildings © OpenStreetMap contributors via Cesium ion'}
     </div>
   );
 }

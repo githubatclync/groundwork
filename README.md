@@ -92,3 +92,9 @@ parser); geometry reaches the frontend as one binary buffer (layout in `src-taur
 
 `npm run tauri build` produces an MSI and an NSIS installer under
 `src-tauri/target/release/bundle/`.
+
+## 3D buildings (optional, online)
+
+Settings > "3D buildings (Cesium OSM Buildings)" streams OSM Buildings as 3D Tiles. It needs your
+own Cesium ion token and a network connection, and is off by default. Arbitrary 3D Tiles files are
+not supported.

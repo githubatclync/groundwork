@@ -103,6 +103,19 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             />
             Show FPS in status bar
           </label>
+          <label className="field-inline">
+            <input
+              type="checkbox"
+              checked={s.osmBuildings}
+              disabled={!s.ionToken.trim()}
+              onChange={(e) => void s.update({ osmBuildings: e.target.checked })}
+            />
+            3D buildings (Cesium OSM Buildings)
+            <small className="muted">
+              {' '}
+              Online only; needs a Cesium ion token. Uses a network connection while viewing.
+            </small>
+          </label>
         </section>
 
         <section>

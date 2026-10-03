@@ -22,12 +22,14 @@ describe('sanitizeSettings', () => {
       esriKey: 'k',
       coordFormat: 'utm',
       showFps: true,
+      osmBuildings: true,
       basemapId: 'esri-imagery',
       mbtilesPaths: ['a.mbtiles', 7],
     });
     expect(s.esriKey).toBe('k');
     expect(s.coordFormat).toBe('utm');
     expect(s.showFps).toBe(true);
+    expect(s.osmBuildings).toBe(true);
     expect(s.mbtilesPaths).toEqual(['a.mbtiles']);
   });
 });

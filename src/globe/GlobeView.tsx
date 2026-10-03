@@ -1,7 +1,14 @@
 // Mounts the Cesium viewer and keeps its imagery and terrain in sync with the settings store.
 // Cesium-specific code is kept inside src/globe/.
 import { useEffect, useRef, useState } from 'react';
-import { EllipsoidTerrainProvider, ImageryLayer, Ion, Terrain, Viewer } from 'cesium';
+import {
+  createOsmBuildingsAsync,
+  EllipsoidTerrainProvider,
+  ImageryLayer,
+  Ion,
+  Terrain,
+  Viewer,
+} from 'cesium';
 import { buildTileUrl } from './basemaps';
 import { useSettings, resolveActiveBasemap } from '../settings/settingsStore';
 import { createImageryProvider } from './imagery';
@@ -29,6 +36,7 @@ export function GlobeView() {
   const basemapId = useSettings((s) => s.basemapId);
   const mbtiles = useSettings((s) => s.mbtiles);
   const ionToken = useSettings((s) => s.ionToken);
+  const osmBuildings = useSettings((s) => s.osmBuildings);
   const esriKey = useSettings((s) => s.esriKey);
   const mapboxToken = useSettings((s) => s.mapboxToken);
 
@@ -149,6 +157,35 @@ export function GlobeView() {
       terrain.errorEvent.removeEventListener(onError);
     };
   }, [viewer, loaded, ionToken]);
+
+  // Optional 3D buildings (3D Tiles); online only, so failures become a notice, not an error.
+  useEffect(() => {
+    if (!viewer || !loaded || !osmBuildings || !ionToken) return;
+    let cancelled = false;
+    let tileset: Awaited<ReturnType<typeof createOsmBuildingsAsync>> | null = null;
+    Ion.defaultAccessToken = ionToken;
+    createOsmBuildingsAsync()
+      .then((t) => {
+        if (cancelled) {
+          t.destroy();
+          return;
+        }
+        tileset = t;
+        viewer.scene.primitives.add(t);
+      })
+      .catch((e: unknown) => {
+        useStatus.getState().set({
+          notice: `3D buildings: ${e instanceof Error ? e.message : String(e)}`,
+        });
+      });
+    return () => {
+      cancelled = true;
+      if (tileset) {
+        viewer.scene.primitives.remove(tileset);
+        tileset = null;
+      }
+    };
+  }, [viewer, loaded, osmBuildings, ionToken]);
 
   return <div ref={ref} className="globe" />;
 }
