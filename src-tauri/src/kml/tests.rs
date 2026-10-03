@@ -237,6 +237,17 @@ fn folders_build_a_tree_with_visibility() {
 }
 
 #[test]
+fn manifest_counts_geometry_kinds() {
+    let l = load(
+        r#"<kml><Placemark><MultiGeometry><Point><coordinates>0,0</coordinates></Point><LineString><coordinates>0,0 1,1</coordinates></LineString>
+        <Polygon><outerBoundaryIs><LinearRing><coordinates>0,0 4,0 4,4 0,0</coordinates></LinearRing></outerBoundaryIs></Polygon></MultiGeometry></Placemark>
+        <Placemark><Point><coordinates>5,5</coordinates></Point></Placemark></kml>"#,
+    );
+    let c = l.manifest("L1", 0).geometry_counts;
+    assert_eq!((c.points, c.lines, c.polygons), (2, 1, 1));
+}
+
+#[test]
 fn placemark_visibility_and_description() {
     let l = load(
         r#"<kml><Placemark><name>x</name><visibility>0</visibility>

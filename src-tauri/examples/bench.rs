@@ -103,6 +103,18 @@ fn main() {
                         ..Default::default()
                     },
                 );
+
+                let path = std::env::temp_dir().join("groundwork-bench.csv");
+                let t = Instant::now();
+                let report =
+                    groundwork_lib::csv::export_csv(&layer, None, &path).expect("csv export");
+                println!(
+                    "    {:<34} {:>7.1} ms  ({} rows)",
+                    "export all rows to CSV",
+                    t.elapsed().as_secs_f64() * 1000.0,
+                    report.rows
+                );
+                let _ = std::fs::remove_file(path);
             }
 
             Err(e) => println!("{name}: ERROR {e}"),

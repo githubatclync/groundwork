@@ -63,3 +63,11 @@ parser); geometry reaches the frontend as one binary buffer (layout in `src-taur
 - **Make editable copy** (the pencil on an imported layer) converts up to 10,000 features into My Places.
 - **Export** (toolbar) writes any layer as KMZ, KML, or GeoJSON. KMZ bundles icons and overlay images; KML cannot, and says so.
   Exports keep the folder tree, styles, and ExtendedData. The built-in point icons come from `test-data/make-builtin-icons.ts`.
+
+## Exporting images and tables
+
+- **Export image…** saves the current view as a PNG at 1×, 2×, or 4× the screen resolution (the scene itself is re-rendered at
+  that resolution, so imagery and points stay sharp). Optional title, scale bar, north arrow, and legend; the basemap
+  attribution is always included. If the full size is more than the GPU can render, the scale is reduced and the dialog says so.
+- **CSV: this view / all rows** (in the attribute table) writes the name and every attribute column, UTF-8 with a byte-order
+  mark so Excel reads it correctly. "This view" respects the current sort, search, and filters.

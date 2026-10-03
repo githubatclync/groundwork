@@ -226,6 +226,15 @@ pub struct FolderNode {
     pub children: Vec<FolderNode>,
 }
 
+/// How many geometries of each kind a layer holds (used for the image legend).
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeometryCounts {
+    pub points: usize,
+    pub lines: usize,
+    pub polygons: usize,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LayerManifest {
@@ -236,6 +245,7 @@ pub struct LayerManifest {
     pub feature_count: usize,
     pub part_count: usize,
     pub vertex_count: usize,
+    pub geometry_counts: GeometryCounts,
     pub bounds: Option<[f64; 4]>,
     pub tree: FolderNode,
     pub styles: Vec<Style>,
@@ -265,6 +275,15 @@ impl LayerData {
             feature_count: self.features.len(),
             part_count: self.part_count(),
             vertex_count: self.vertex_count(),
+            geometry_counts: GeometryCounts {
+                points: self.part_type.iter().filter(|&&t| t == GEOM_POINT).count(),
+                lines: self.part_type.iter().filter(|&&t| t == GEOM_LINE).count(),
+                polygons: self
+                    .part_type
+                    .iter()
+                    .filter(|&&t| t == GEOM_POLY_OUTER)
+                    .count(),
+            },
             bounds: self.bounds,
             tree: build_node(0, &self.folders, &counts, &children),
             styles: self.styles.clone(),

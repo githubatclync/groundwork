@@ -57,6 +57,7 @@ export interface LayerManifest {
   featureCount: number;
   partCount: number;
   vertexCount: number;
+  geometryCounts: { points: number; lines: number; polygons: number };
   bounds: Bounds | null;
   tree: FolderNode;
   styles: Style[];

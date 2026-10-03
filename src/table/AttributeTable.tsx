@@ -24,6 +24,7 @@ import type { Bounds } from '../io/types';
 import { useLayers, type Layer } from '../layers/layerStore';
 import { useSelection } from '../selection/selectionStore';
 import { useUi } from '../ui/uiStore';
+import { chooseCsvPath, exportCsv } from '../io/csv';
 import { useAttributeRows } from './useAttributeRows';
 
 const ROW_HEIGHT = 26;
@@ -137,6 +138,19 @@ function TableBody({ layer }: { layer: Layer }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selection]);
 
+  const [csvMessage, setCsvMessage] = useState<string | null>(null);
+  const runCsvExport = async (allRows: boolean) => {
+    setCsvMessage(null);
+    try {
+      const path = await chooseCsvPath(layer.name);
+      if (!path) return;
+      const report = await exportCsv(layer.id, allRows ? null : spec, path);
+      setCsvMessage(`Saved ${report.rows.toLocaleString()} rows to ${report.path}`);
+    } catch (e) {
+      setCsvMessage(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const select = (row: AttrRow) => {
     useSelection.getState().select(layer.id, row.featureId, 'table');
     void getFeature(layer.id, row.featureId)
@@ -164,10 +178,29 @@ function TableBody({ layer }: { layer: Layer }) {
           <input type="checkbox" checked={inView} onChange={(e) => setInView(e.target.checked)} />
           Only features in view
         </label>
+        <button
+          type="button"
+          title="Save the rows currently shown (with the current sort and filters) as CSV"
+          onClick={() => void runCsvExport(false)}
+        >
+          CSV: this view
+        </button>
+        <button
+          type="button"
+          title="Save every row of the layer as CSV"
+          onClick={() => void runCsvExport(true)}
+        >
+          CSV: all rows
+        </button>
         <span className="muted count">
           {rows.total.toLocaleString()} of {layer.featureCount.toLocaleString()} rows
         </span>
       </div>
+      {csvMessage && (
+        <div className="muted small csv-message" role="status">
+          {csvMessage}
+        </div>
+      )}
       {rows.error && (
         <div className="error banner" role="alert">
           {rows.error}

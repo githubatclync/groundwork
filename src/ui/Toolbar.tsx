@@ -15,9 +15,11 @@ import {
 export function Toolbar({
   onOpenSettings,
   onExport,
+  onExportImage,
 }: {
   onOpenSettings: () => void;
   onExport: () => void;
+  onExportImage: () => void;
 }) {
   const settings = useSettings();
   const keys = selectKeys(settings);
@@ -116,6 +118,9 @@ export function Toolbar({
         </button>
       </div>
       <span className="spacer" />
+      <button type="button" onClick={onExportImage}>
+        Export image…
+      </button>
       <button type="button" onClick={onExport}>
         Export…
       </button>

@@ -10,6 +10,7 @@ use tauri::{ipc::Response, Manager, State};
 
 use crate::attributes::{self, AttributePage, FeatureDetail, ViewSpec};
 use crate::binary::encode_geometry;
+use crate::csv::{self, CsvError, CsvReport};
 use crate::export::{self, ExportError, ExportReport, UserFeatureDto};
 use crate::import::{import_path, ImportError};
 use crate::layer::{mime_for_path, LayerData, LayerManifest};
@@ -182,6 +183,50 @@ pub fn layer_to_user(
         .get(&layer_id)
         .ok_or(ExportError::UnknownLayer(layer_id))?;
     export::layer_to_user_features(&layer)
+}
+
+/// Exports the attribute table to CSV: the rows of `spec`'s view, or all rows when `spec` is null.
+#[tauri::command]
+pub async fn export_csv(
+    layer_id: String,
+    spec: Option<ViewSpec>,
+    path: String,
+    store: State<'_, LayerStore>,
+) -> Result<CsvReport, CsvError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let layer = store
+            .get(&layer_id)
+            .ok_or(CsvError::UnknownLayer(layer_id))?;
+        csv::export_csv(&layer, spec.as_ref(), std::path::Path::new(&path))
+    })
+    .await
+    .map_err(|e| CsvError::Io {
+        file: "export task".into(),
+        message: e.to_string(),
+    })?
+}
+
+/// Saves a PNG sent as the raw request body (images are too large for JSON). The destination is
+/// in the percent-encoded `path` header and must end in .png.
+#[tauri::command]
+pub fn save_png(request: tauri::ipc::Request<'_>) -> Result<(), String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Expected raw image bytes".into());
+    };
+    let path = request
+        .headers()
+        .get("path")
+        .and_then(|v| v.to_str().ok())
+        .map(percent_decode)
+        .ok_or("Missing destination path")?;
+    if !path.to_ascii_lowercase().ends_with(".png") {
+        return Err(format!("\"{path}\" is not a .png file name"));
+    }
+    if bytes.len() < 8 || &bytes[1..4] != b"PNG" {
+        return Err("The data is not a PNG image".into());
+    }
+    std::fs::write(&path, bytes).map_err(|e| format!("Could not write \"{path}\": {e}"))
 }
 
 /// Supported files passed on the command line (e.g. via "Open with" or a terminal).

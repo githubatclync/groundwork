@@ -636,3 +636,26 @@ fieldset.formats {
   margin-top: 10px;
   overflow-wrap: anywhere;
 }
+
+.csv-message {
+  padding: 2px 10px;
+  overflow-wrap: anywhere;
+}
+
+/* The toolbar has many controls: wrap onto a second row instead of overflowing the window. */
+.toolbar {
+  flex-wrap: wrap;
+  row-gap: 4px;
+  gap: 8px 10px;
+}
+.toolbar button {
+  white-space: nowrap;
+}
+.toolbar .spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}
+html,
+body {
+  overflow: hidden;
+}

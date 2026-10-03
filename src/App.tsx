@@ -12,6 +12,7 @@ import { LayersPanel } from './ui/LayersPanel';
 import { SettingsDialog } from './ui/SettingsDialog';
 import { StatusBar } from './ui/StatusBar';
 import { ExportDialog } from './ui/ExportDialog';
+import { ImageExportDialog } from './ui/ImageExportDialog';
 import { MeasurePanel } from './ui/MeasurePanel';
 import { PlaceEditor } from './ui/PlaceEditor';
 import { useUserLayer } from './layers/userLayerStore';
@@ -38,6 +39,7 @@ export function App() {
   const placeEditing = userSelected || placeTool;
   const drawing = useTool((s) => s.tool !== 'none');
   const [exportOpen, setExportOpen] = useState(false);
+  const [imageExportOpen, setImageExportOpen] = useState(false);
   useToolKeys();
   useEffect(() => linkSelections(), []);
 
@@ -71,7 +73,11 @@ export function App() {
 
   return (
     <div className="app">
-      <Toolbar onOpenSettings={() => setSettingsOpen(true)} onExport={() => setExportOpen(true)} />
+      <Toolbar
+        onOpenSettings={() => setSettingsOpen(true)}
+        onExport={() => setExportOpen(true)}
+        onExportImage={() => setImageExportOpen(true)}
+      />
       <div className="workspace">
         <LayersPanel />
         <div className="center">
@@ -92,6 +98,7 @@ export function App() {
       </div>
       <StatusBar />
       {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} />}
+      {imageExportOpen && <ImageExportDialog onClose={() => setImageExportOpen(false)} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
     </div>
   );
