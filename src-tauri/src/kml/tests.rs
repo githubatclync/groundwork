@@ -288,7 +288,7 @@ fn ground_overlay_with_rotation() {
 fn unsupported_elements_are_skipped_with_warnings() {
     let l = load(
         r#"<kml xmlns:gx="http://www.google.com/kml/ext/2.2"><Document>
-          <NetworkLink><Link><href>x.kml</href></Link></NetworkLink>
+          <NetworkLink><Link><href>http://example.com/x.kml</href></Link></NetworkLink>
           <ScreenOverlay><Icon><href>logo.png</href></Icon></ScreenOverlay>
           <Placemark><name>keep</name><TimeStamp><when>2020</when></TimeStamp><Point><coordinates>0,0</coordinates></Point></Placemark>
           <Placemark><gx:Track><gx:coord>1 2 3</gx:coord></gx:Track></Placemark>
@@ -350,4 +350,51 @@ fn remote_icons_are_flagged_not_fetched() {
     assert!(!loc.remote);
     assert_eq!(loc.href, "files/pin.png");
     assert_eq!(warning(&l, "Remote icons"), 1);
+}
+
+#[test]
+fn network_links_to_local_files_become_links_and_others_warn() {
+    let l = load(
+        r#"<kml><Document>
+          <NetworkLink><name>Child</name><Link><href>data/child.kml</href></Link></NetworkLink>
+          <NetworkLink><Url><href>../shared/other.kmz</href></Url></NetworkLink>
+          <NetworkLink><name>Online</name><Link><href>https://example.com/feed.kml</href></Link></NetworkLink>
+          <NetworkLink><Link><href>feed.kml?refresh=1</href></Link></NetworkLink>
+          <NetworkLink><Link><href>C:/abs/path.kml</href></Link></NetworkLink>
+          <Placemark><name>keep</name><Point><coordinates>0,0</coordinates></Point></Placemark>
+        </Document></kml>"#,
+    );
+    let hrefs: Vec<(&str, &str)> = l
+        .links
+        .iter()
+        .map(|k| (k.name.as_str(), k.path.as_str()))
+        .collect();
+    assert_eq!(
+        hrefs,
+        [("Child", "data/child.kml"), ("", "../shared/other.kmz")]
+    );
+    assert_eq!(warning(&l, "NetworkLink"), 3);
+    assert_eq!(l.features.len(), 1);
+}
+
+#[test]
+fn local_relative_targets_are_recognized_strictly() {
+    use super::local_relative_target as t;
+    assert_eq!(t("child.kml").as_deref(), Some("child.kml"));
+    assert_eq!(t(" ../up/there.KMZ ").as_deref(), Some("../up/there.KMZ"));
+    assert_eq!(t("a%20b/c.gpx").as_deref(), Some("a%20b/c.gpx"));
+    for bad in [
+        "",
+        "http://x/y.kml",
+        "https://x/y.kml",
+        "file:///x.kml",
+        "/abs/x.kml",
+        "C:/x.kml",
+        "x.kml?a=1",
+        "//host/x.kml",
+        "image.png",
+        "noext",
+    ] {
+        assert_eq!(t(bad), None, "{bad}");
+    }
 }

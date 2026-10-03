@@ -53,7 +53,7 @@ export interface LayerManifest {
   id: string;
   name: string;
   sourcePath: string;
-  format: 'kml' | 'kmz' | 'geojson' | 'gpx';
+  format: 'kml' | 'kmz' | 'geojson' | 'gpx' | 'csv';
   featureCount: number;
   partCount: number;
   vertexCount: number;
@@ -64,5 +64,7 @@ export interface LayerManifest {
   columns: Column[];
   warnings: Warning[];
   overlays: Overlay[];
+  /** Local files this layer links to (KML NetworkLink); each is imported as a child layer. */
+  links: { name: string; path: string }[];
   elapsedMs: number;
 }

@@ -1,46 +1,50 @@
-// Root component: toolbar, layers panel, globe, status bar, settings dialog, and drag-and-drop.
+// Root component: toolbar, layers panel, globe, status bar, dialogs, drag-and-drop, and shortcuts.
 import { useEffect, useState } from 'react';
 import { GlobeView } from './globe/GlobeView';
 import { getLaunchFiles, listenForDrops } from './io/import';
-import { openFiles, startLayerManager } from './layers/layerManager';
-import { useSettings } from './settings/settingsStore';
-import { AttributeTable } from './table/AttributeTable';
-import { useSelection } from './selection/selectionStore';
-import { Attribution } from './ui/Attribution';
-import { FeatureDetails } from './ui/FeatureDetails';
-import { LayersPanel } from './ui/LayersPanel';
-import { SettingsDialog } from './ui/SettingsDialog';
-import { StatusBar } from './ui/StatusBar';
-import { ExportDialog } from './ui/ExportDialog';
-import { ImageExportDialog } from './ui/ImageExportDialog';
-import { MeasurePanel } from './ui/MeasurePanel';
-import { PlaceEditor } from './ui/PlaceEditor';
+import { startLayerManager } from './layers/layerManager';
+import { openPaths } from './layers/openPaths';
 import { useUserLayer } from './layers/userLayerStore';
 import { linkSelections } from './selection/selectionLink';
+import { useSelection } from './selection/selectionStore';
+import { useSettings } from './settings/settingsStore';
+import { AttributeTable } from './table/AttributeTable';
 import { drawKindOf } from './tools/draftStore';
-import { Toolbar } from './ui/Toolbar';
 import { measureModeOf, useTool } from './tools/toolStore';
 import { useToolKeys } from './tools/useToolKeys';
+import { Attribution } from './ui/Attribution';
+import { ExportDialog } from './ui/ExportDialog';
+import { FeatureDetails } from './ui/FeatureDetails';
+import { ImageExportDialog } from './ui/ImageExportDialog';
+import { LayersPanel } from './ui/LayersPanel';
+import { MeasurePanel } from './ui/MeasurePanel';
+import { PlaceEditor } from './ui/PlaceEditor';
+import { CsvImportDialog, LocateDialog } from './ui/PromptDialogs';
+import { SettingsDialog } from './ui/SettingsDialog';
+import { ShortcutsDialog } from './ui/ShortcutsDialog';
+import { StatusBar } from './ui/StatusBar';
+import { Toolbar } from './ui/Toolbar';
 import { useUi } from './ui/uiStore';
+import { useShortcuts } from './ui/useShortcuts';
 
 // Launch files must open once even though React StrictMode runs effects twice in development.
 let launchFilesHandled = false;
 
 export function App() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [dropHover, setDropHover] = useState(false);
   const init = useSettings((s) => s.init);
   const tableOpen = useUi((s) => s.tableOpen);
   const detailsOpen = useUi((s) => s.detailsOpen);
+  const dialog = useUi((s) => s.dialog);
+  const setDialog = useUi((s) => s.setDialog);
   const hasSelection = useSelection((s) => s.selection !== null);
   const measuring = useTool((s) => measureModeOf(s.tool) !== null);
   const userSelected = useUserLayer((s) => s.selectedId !== null);
   const placeTool = useTool((s) => drawKindOf(s.tool) !== null || s.tool === 'edit');
   const placeEditing = userSelected || placeTool;
   const drawing = useTool((s) => s.tool !== 'none');
-  const [exportOpen, setExportOpen] = useState(false);
-  const [imageExportOpen, setImageExportOpen] = useState(false);
   useToolKeys();
+  useShortcuts();
   useEffect(() => linkSelections(), []);
 
   useEffect(() => {
@@ -49,19 +53,21 @@ export function App() {
 
   useEffect(() => startLayerManager(), []);
 
-  // Files passed on the command line ("Open with…") open at startup.
+  // Files passed on the command line ("Open with…") open at startup. Settings load first so a
+  // project's basemap choice is not overwritten by the defaults loading afterwards.
   useEffect(() => {
     if (launchFilesHandled) return;
     launchFilesHandled = true;
-    void getLaunchFiles()
-      .then((paths) => (paths.length ? openFiles(paths) : undefined))
+    void init()
+      .then(() => getLaunchFiles())
+      .then((paths) => (paths.length ? openPaths(paths) : undefined))
       .catch(() => undefined);
-  }, []);
+  }, [init]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     let cancelled = false;
-    void listenForDrops((paths) => void openFiles(paths), setDropHover).then((fn) => {
+    void listenForDrops((paths) => void openPaths(paths), setDropHover).then((fn) => {
       if (cancelled) fn();
       else unlisten = fn;
     });
@@ -74,9 +80,10 @@ export function App() {
   return (
     <div className="app">
       <Toolbar
-        onOpenSettings={() => setSettingsOpen(true)}
-        onExport={() => setExportOpen(true)}
-        onExportImage={() => setImageExportOpen(true)}
+        onOpenSettings={() => setDialog('settings')}
+        onExport={() => setDialog('export')}
+        onExportImage={() => setDialog('image')}
+        onHelp={() => setDialog('shortcuts')}
       />
       <div className="workspace">
         <LayersPanel />
@@ -97,9 +104,12 @@ export function App() {
         )}
       </div>
       <StatusBar />
-      {exportOpen && <ExportDialog onClose={() => setExportOpen(false)} />}
-      {imageExportOpen && <ImageExportDialog onClose={() => setImageExportOpen(false)} />}
-      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {dialog === 'export' && <ExportDialog onClose={() => setDialog(null)} />}
+      {dialog === 'image' && <ImageExportDialog onClose={() => setDialog(null)} />}
+      {dialog === 'settings' && <SettingsDialog onClose={() => setDialog(null)} />}
+      {dialog === 'shortcuts' && <ShortcutsDialog onClose={() => setDialog(null)} />}
+      <LocateDialog />
+      <CsvImportDialog />
     </div>
   );
 }

@@ -71,3 +71,24 @@ parser); geometry reaches the frontend as one binary buffer (layout in `src-taur
   attribution is always included. If the full size is more than the GPU can render, the scale is reduced and the dialog says so.
 - **CSV: this view / all rows** (in the attribute table) writes the name and every attribute column, UTF-8 with a byte-order
   mark so Excel reads it correctly. "This view" respects the current sort, search, and filters.
+
+## Projects, search, CSV, and shortcuts
+
+- **Projects**: Project > Save writes a `.groundwork.json` file with the open layers (paths stored
+  relative to the project file when possible, so a project folder can be moved), per-layer
+  visibility, opacity and folder states, the camera, the basemap, and your drawn features. If a
+  source file is missing on open, you are asked to locate it or skip it. Recent projects are listed
+  on the start screen and in the Project menu.
+- **Search**: type coordinates (decimal degrees, degrees/minutes/seconds, or UTM) and press Enter;
+  this works offline. Place names use OpenStreetMap Nominatim, only when you press Enter and only
+  when online.
+- **CSV**: dropping or opening a `.csv` shows a dialog to confirm the latitude and longitude
+  columns, with a data preview. Other columns become attributes.
+- **NetworkLink**: KML links to local files (relative paths to kml, kmz, geojson, or gpx) open as
+  child layers, up to 3 levels deep. Online links are not fetched and produce a warning.
+- **Shortcuts**: press `?` for the full list (Ctrl+O/S/E, 1-7 for tools, `/` for search, T for the table).
+
+## Building an installer
+
+`npm run tauri build` produces an MSI and an NSIS installer under
+`src-tauri/target/release/bundle/`.

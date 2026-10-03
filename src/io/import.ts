@@ -3,7 +3,20 @@ import { invoke } from '@tauri-apps/api/core';
 import { decodeGeometry, type GeometryBuffer } from './geometry';
 import type { LayerManifest } from './types';
 
-export const GEODATA_EXTENSIONS = ['kml', 'kmz', 'geojson', 'json', 'gpx'];
+export const GEODATA_EXTENSIONS = ['kml', 'kmz', 'geojson', 'json', 'gpx', 'csv'];
+
+export interface CsvInspection {
+  headers: string[];
+  delimiter: string;
+  latCol: number | null;
+  lonCol: number | null;
+  sample: string[][];
+}
+
+export const inspectCsv = (path: string) => invoke<CsvInspection>('inspect_csv', { path });
+
+export const importCsvFile = (path: string, latCol: number, lonCol: number) =>
+  invoke<LayerManifest>('import_csv_file', { path, latCol, lonCol });
 
 export const importFile = (path: string) => invoke<LayerManifest>('import_file', { path });
 

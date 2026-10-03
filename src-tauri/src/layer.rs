@@ -84,6 +84,37 @@ pub struct Overlay {
     pub folder: u32,
 }
 
+/// A KML NetworkLink to another local file, imported as a child layer.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LinkRef {
+    pub name: String,
+    /// The href as written in the file until resolved, then an absolute path to an existing file.
+    pub path: String,
+}
+
+/// Decodes %XX sequences (used for hrefs and custom-scheme paths).
+pub fn percent_decode(s: &str) -> String {
+    fn hex(b: u8) -> Option<u8> {
+        (b as char).to_digit(16).map(|d| d as u8)
+    }
+    let b = s.as_bytes();
+    let mut out = Vec::with_capacity(b.len());
+    let mut i = 0;
+    while i < b.len() {
+        if b[i] == b'%' && i + 2 < b.len() {
+            if let (Some(h), Some(l)) = (hex(b[i + 1]), hex(b[i + 2])) {
+                out.push(h * 16 + l);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(b[i]);
+        i += 1;
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
 #[derive(Debug, Clone)]
 pub struct FeatureRec {
     pub name: String,
@@ -173,6 +204,8 @@ pub struct LayerData {
     pub resources: Resources,
     /// west, south, east, north per feature; all NaN for features without geometry.
     pub feature_bounds: Vec<[f64; 4]>,
+    /// Local files this layer links to (KML NetworkLink), resolved after import.
+    pub links: Vec<LinkRef>,
     /// The most recently built attribute-table view (sorted/filtered feature ids), keyed by its spec.
     pub view_cache: Mutex<Option<(String, std::sync::Arc<Vec<u32>>)>>,
 }
@@ -252,6 +285,7 @@ pub struct LayerManifest {
     pub columns: Vec<Column>,
     pub warnings: Vec<Warning>,
     pub overlays: Vec<Overlay>,
+    pub links: Vec<LinkRef>,
     pub elapsed_ms: u64,
 }
 
@@ -290,6 +324,7 @@ impl LayerData {
             columns: self.columns.clone(),
             warnings: self.warnings.clone(),
             overlays: self.overlays.clone(),
+            links: self.links.clone(),
             elapsed_ms,
         }
     }
@@ -328,6 +363,7 @@ pub struct LayerBuilder {
     declared_types: HashMap<String, ColumnType>,
     warnings: BTreeMap<String, (String, u32)>,
     overlays: Vec<Overlay>,
+    links: Vec<LinkRef>,
     bounds: Option<[f64; 4]>,
     current: Option<u32>,
 }
@@ -357,6 +393,7 @@ impl LayerBuilder {
             declared_types: HashMap::new(),
             warnings: BTreeMap::new(),
             overlays: Vec::new(),
+            links: Vec::new(),
             bounds: None,
             current: None,
         }
@@ -492,6 +529,10 @@ impl LayerBuilder {
         self.extend_bounds(overlay.west, overlay.south);
         self.extend_bounds(overlay.east, overlay.north);
         self.overlays.push(overlay);
+    }
+
+    pub fn add_link(&mut self, name: String, href: String) {
+        self.links.push(LinkRef { name, path: href });
     }
 
     pub fn feature_count(&self) -> usize {
@@ -663,6 +704,7 @@ impl LayerBuilder {
             bounds: self.bounds,
             resources,
             feature_bounds,
+            links: self.links,
             view_cache: Mutex::new(None),
         }
     }

@@ -1,5 +1,5 @@
 // Camera helpers.
-import { Math as CesiumMath, Rectangle } from 'cesium';
+import { Cartesian3, Math as CesiumMath, Rectangle } from 'cesium';
 import type { Bounds } from '../io/types';
 import { getViewer } from './viewerRegistry';
 
@@ -56,4 +56,50 @@ export function onCameraSettled(onChange: () => void, delayMs = 300): () => void
     clearTimeout(timer);
     if (!viewer.isDestroyed()) viewer.camera.moveEnd.removeEventListener(handler);
   };
+}
+
+export interface CameraState {
+  lon: number;
+  lat: number;
+  height: number;
+  heading: number;
+  pitch: number;
+  roll: number;
+}
+
+/** The camera's position and orientation, for saving in a project. */
+export function cameraState(): CameraState | null {
+  const viewer = getViewer();
+  if (!viewer) return null;
+  const c = viewer.camera.positionCartographic;
+  return {
+    lon: CesiumMath.toDegrees(c.longitude),
+    lat: CesiumMath.toDegrees(c.latitude),
+    height: c.height,
+    heading: viewer.camera.heading,
+    pitch: viewer.camera.pitch,
+    roll: viewer.camera.roll,
+  };
+}
+
+export function setCameraState(s: CameraState) {
+  const viewer = getViewer();
+  if (!viewer) return;
+  viewer.camera.setView({
+    destination: Cartesian3.fromDegrees(s.lon, s.lat, s.height),
+    orientation: { heading: s.heading, pitch: s.pitch, roll: s.roll },
+  });
+}
+
+/** Flies to look straight down at a point from `height` meters. */
+export function flyToPoint(lon: number, lat: number, height = 3000) {
+  getViewer()?.camera.flyTo({
+    destination: Cartesian3.fromDegrees(lon, lat, height),
+    duration: 1.5,
+  });
+}
+
+/** Flies to a bounding box, e.g. a geocoder result. */
+export function flyToBbox(bbox: Bounds) {
+  zoomToBounds(bbox, 1.5);
 }

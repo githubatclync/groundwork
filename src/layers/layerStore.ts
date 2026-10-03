@@ -17,6 +17,10 @@ export interface Layer {
   manifest: LayerManifest;
   /** Wall-clock time from starting the import until the layer was fully drawn. */
   loadMs?: number;
+  /** Column choices of a CSV layer, saved in projects so reopening needs no dialog. */
+  csv?: { latCol: number; lonCol: number };
+  /** True for layers created from a parent's NetworkLink; projects re-create them from the parent. */
+  derived?: boolean;
 }
 
 export type JobPhase = 'reading' | 'transferring' | 'rendering';
@@ -62,6 +66,9 @@ interface LayerState {
   removeLayer: (id: string) => void;
   setVisible: (id: string, visible: boolean) => void;
   setLoadMs: (id: string, ms: number) => void;
+  patchLayer: (id: string, patch: Partial<Pick<Layer, 'name' | 'csv' | 'derived'>>) => void;
+  /** Sets the visibility of folders by id (used when restoring a project). */
+  applyFolderStates: (id: string, states: Record<string, boolean>) => void;
   startJob: (name: string) => number;
   updateJob: (id: number, patch: Partial<Pick<ImportJob, 'phase' | 'progress'>>) => void;
   endJob: (id: number) => void;
@@ -79,6 +86,16 @@ export function withFolderVisible(
     ...node,
     visible: node.id === folderId ? visible : node.visible,
     children: node.children.map((c) => withFolderVisible(c, folderId, visible)),
+  };
+}
+
+/** Returns a copy of the tree with folder visibility set from a map of folder id to visible. */
+export function withFolderStates(node: FolderNode, states: Record<string, boolean>): FolderNode {
+  const own = states[String(node.id)];
+  return {
+    ...node,
+    visible: typeof own === 'boolean' ? own : node.visible,
+    children: node.children.map((c) => withFolderStates(c, states)),
   };
 }
 
@@ -108,6 +125,14 @@ export const useLayers = create<LayerState>((set) => ({
     }),
   setVisible: (id, visible) =>
     set((s) => ({ layers: s.layers.map((l) => (l.id === id ? { ...l, visible } : l)) })),
+  patchLayer: (id, patch) =>
+    set((s) => ({ layers: s.layers.map((l) => (l.id === id ? { ...l, ...patch } : l)) })),
+  applyFolderStates: (id, states) =>
+    set((s) => ({
+      layers: s.layers.map((l) =>
+        l.id === id ? { ...l, tree: withFolderStates(l.tree, states) } : l,
+      ),
+    })),
   setLoadMs: (id, ms) =>
     set((s) => ({ layers: s.layers.map((l) => (l.id === id ? { ...l, loadMs: ms } : l)) })),
   startJob: (name) => {

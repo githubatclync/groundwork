@@ -15,6 +15,7 @@ import { installDraftOverlay } from './draftOverlay';
 import { installDrawInteraction } from './drawInteraction';
 import { installEditInteraction } from './editInteraction';
 import { installMeasureInteraction } from './measureInteraction';
+import { installSearchOverlay } from './searchOverlay';
 import { installMeasureOverlay } from './measureOverlay';
 import { installPicking } from './picking';
 import { installUserLayerOverlay } from './userLayerOverlay';
@@ -55,6 +56,7 @@ export function GlobeView() {
     const stopDraw = installDrawInteraction(v);
     const stopDraft = installDraftOverlay(v);
     const stopEdit = installEditInteraction(v);
+    const stopSearch = installSearchOverlay(v);
     const stopPicking = installPicking(
       v,
       (feature) => {
@@ -84,6 +86,7 @@ export function GlobeView() {
       stopDraw();
       stopDraft();
       stopEdit();
+      stopSearch();
       v.destroy();
       setViewer(null);
     };

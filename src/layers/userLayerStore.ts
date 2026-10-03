@@ -78,6 +78,8 @@ interface UserLayerState {
   endTransient: () => void;
   undo: () => void;
   redo: () => void;
+  /** Replaces all features without recording history (opening a project). */
+  load: (features: Omit<UserFeature, 'id'>[], visible: boolean) => void;
 }
 
 let nextId = 1;
@@ -150,6 +152,18 @@ export const useUserLayer = create<UserLayerState>((set, get) => {
       if (!start || start.features === get().features) return;
       lastKey = null;
       set((s) => ({ past: [...s.past, start].slice(-HISTORY_LIMIT), future: [] }));
+    },
+
+    load: (fs, visible) => {
+      lastKey = null;
+      transientStart = null;
+      set({
+        features: fs.map((f) => ({ ...f, id: nextId++ })),
+        visible,
+        selectedId: null,
+        past: [],
+        future: [],
+      });
     },
 
     undo: () => {

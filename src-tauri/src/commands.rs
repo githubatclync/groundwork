@@ -11,9 +11,12 @@ use tauri::{ipc::Response, Manager, State};
 use crate::attributes::{self, AttributePage, FeatureDetail, ViewSpec};
 use crate::binary::encode_geometry;
 use crate::csv::{self, CsvError, CsvReport};
+use crate::csv_import::{self, CsvInspection};
 use crate::export::{self, ExportError, ExportReport, UserFeatureDto};
+use crate::geocode::{self, GeocodeError, Place};
 use crate::import::{import_path, ImportError};
-use crate::layer::{mime_for_path, LayerData, LayerManifest};
+use crate::layer::{mime_for_path, percent_decode, LayerData, LayerManifest};
+use crate::textfile::{self, TextFileError};
 
 #[derive(Clone, Default)]
 pub struct LayerStore {
@@ -229,6 +232,56 @@ pub fn save_png(request: tauri::ipc::Request<'_>) -> Result<(), String> {
     std::fs::write(&path, bytes).map_err(|e| format!("Could not write \"{path}\": {e}"))
 }
 
+/// Reads a CSV header and a few rows and guesses the delimiter and latitude/longitude columns.
+#[tauri::command]
+pub async fn inspect_csv(path: String) -> Result<CsvInspection, ImportError> {
+    tauri::async_runtime::spawn_blocking(move || csv_import::inspect(std::path::Path::new(&path)))
+        .await
+        .map_err(join_error)?
+}
+
+/// Imports a CSV as a point layer using the columns the user confirmed.
+#[tauri::command]
+pub async fn import_csv_file(
+    path: String,
+    lat_col: usize,
+    lon_col: usize,
+    store: State<'_, LayerStore>,
+) -> Result<LayerManifest, ImportError> {
+    let store = store.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let t = Instant::now();
+        let data = csv_import::import(std::path::Path::new(&path), lat_col, lon_col)?;
+        Ok(store.add(data, t.elapsed().as_millis() as u64))
+    })
+    .await
+    .map_err(join_error)?
+}
+
+/// Looks a place name up with Nominatim (the only call the app makes besides map tiles).
+#[tauri::command]
+pub async fn geocode(query: String) -> Result<Vec<Place>, GeocodeError> {
+    tauri::async_runtime::spawn_blocking(move || geocode::search(&query))
+        .await
+        .map_err(|e| GeocodeError::Network(e.to_string()))?
+}
+
+#[tauri::command]
+pub fn read_text_file(path: String) -> Result<String, TextFileError> {
+    textfile::read_text(std::path::Path::new(&path))
+}
+
+#[tauri::command]
+pub fn write_text_file(path: String, contents: String) -> Result<(), TextFileError> {
+    textfile::write_text(std::path::Path::new(&path), &contents)
+}
+
+/// Whether a file exists (used to find missing project sources).
+#[tauri::command]
+pub fn file_exists(path: String) -> bool {
+    std::path::Path::new(&path).is_file()
+}
+
 /// Supported files passed on the command line (e.g. via "Open with" or a terminal).
 #[tauri::command]
 pub fn get_launch_files() -> Vec<String> {
@@ -236,7 +289,7 @@ pub fn get_launch_files() -> Vec<String> {
         .skip(1)
         .filter(|a| {
             let lower = a.to_ascii_lowercase();
-            [".kml", ".kmz", ".geojson", ".json", ".gpx"]
+            [".kml", ".kmz", ".geojson", ".json", ".gpx", ".csv"]
                 .iter()
                 .any(|e| lower.ends_with(e))
                 && std::path::Path::new(a).is_file()
@@ -247,27 +300,6 @@ pub fn get_launch_files() -> Vec<String> {
 #[tauri::command]
 pub fn remove_layer(layer_id: String, store: State<'_, LayerStore>) {
     store.remove(&layer_id);
-}
-
-fn percent_decode(s: &str) -> String {
-    fn hex(b: u8) -> Option<u8> {
-        (b as char).to_digit(16).map(|d| d as u8)
-    }
-    let b = s.as_bytes();
-    let mut out = Vec::with_capacity(b.len());
-    let mut i = 0;
-    while i < b.len() {
-        if b[i] == b'%' && i + 2 < b.len() {
-            if let (Some(h), Some(l)) = (hex(b[i + 1]), hex(b[i + 2])) {
-                out.push(h * 16 + l);
-                i += 3;
-                continue;
-            }
-        }
-        out.push(b[i]);
-        i += 1;
-    }
-    String::from_utf8_lossy(&out).into_owned()
 }
 
 /// Handler for `kmz://<layer_id>/<relative path>`.

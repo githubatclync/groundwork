@@ -1,0 +1,5 @@
+name,Lat,Lng,population,country
+"Paris, FR",48.8566,2.3522,2100000,France
+Oslo,59.9139,10.7522,700000,Norway
+Broken row,not-a-number,5,1,Nowhere
+Madrid,40.4168,-3.7038,3300000,Spain

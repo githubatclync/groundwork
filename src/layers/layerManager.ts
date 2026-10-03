@@ -4,7 +4,7 @@
 import { whenViewerReady } from '../globe/viewerRegistry';
 import { zoomToBounds } from '../globe/camera';
 import { useStatus } from '../globe/statusStore';
-import { fetchGeometry, importFile, removeLayerData } from '../io/import';
+import { fetchGeometry, importCsvFile, importFile, removeLayerData } from '../io/import';
 import { useSelection } from '../selection/selectionStore';
 import { useUi } from '../ui/uiStore';
 import { layerFromManifest, useLayers } from './layerStore';
@@ -33,21 +33,53 @@ export async function openFiles(paths: string[]): Promise<void> {
   for (const path of paths) await openFile(path);
 }
 
-async function openFile(path: string): Promise<void> {
+export interface OpenOptions {
+  /** Latitude/longitude columns for a CSV file (already confirmed by the user or a project). */
+  csv?: { latCol: number; lonCol: number };
+  /** Set for layers created from a parent's NetworkLink. */
+  derivedFrom?: string;
+  /** Display name from the NetworkLink. */
+  linkName?: string;
+  depth?: number;
+  /** Files already opened in this chain, so link cycles stop. */
+  visited?: Set<string>;
+}
+
+/** How many levels of NetworkLinks are followed. */
+export const MAX_LINK_DEPTH = 3;
+
+const pathKey = (p: string) => p.replace(/\\/g, '/').toLowerCase();
+
+/**
+ * Imports one file and draws it. Local NetworkLinks inside it are opened afterwards as child
+ * layers. Returns the new layer's id, or null if the import failed (an error is shown).
+ */
+export async function openFile(path: string, opts: OpenOptions = {}): Promise<string | null> {
   const store = useLayers.getState();
   const job = store.startJob(fileName(path));
   const started = performance.now();
+  let layerId: string | null = null;
+  let links: { name: string; path: string }[] = [];
+  let parentName = '';
   try {
     const viewer = await whenViewerReady();
 
-    const manifest = await importFile(path);
+    const manifest = opts.csv
+      ? await importCsvFile(path, opts.csv.latCol, opts.csv.lonCol)
+      : await importFile(path);
     store.updateJob(job, { phase: 'transferring' });
     const geometry = await fetchGeometry(manifest.id);
 
     store.updateJob(job, { phase: 'rendering', progress: 0 });
     const renderer = new LayerRenderer(viewer, manifest, geometry);
     renderers.set(manifest.id, renderer);
-    store.addLayer(layerFromManifest(manifest));
+    const layer = layerFromManifest(manifest);
+    if (opts.csv) layer.csv = opts.csv;
+    if (opts.derivedFrom) {
+      layer.derived = true;
+      layer.name = `${opts.derivedFrom} › ${opts.linkName || manifest.name}`;
+    }
+    store.addLayer(layer);
     if (useLayers.getState().layers.length === 1) useUi.getState().setTableOpen(true);
     // For the first layer, jump to it before drawing so the right level of detail is built first.
     if (useLayers.getState().layers.length === 1) zoomToBounds(manifest.bounds, 0);
@@ -56,11 +88,38 @@ async function openFile(path: string): Promise<void> {
       onProgress: (progress) => useLayers.getState().updateJob(job, { progress }),
     });
     useLayers.getState().setLoadMs(manifest.id, Math.round(performance.now() - started));
+    layerId = manifest.id;
+    links = manifest.links;
+    parentName = manifest.name;
   } catch (e) {
     useLayers.getState().addError(message(e));
   } finally {
     useLayers.getState().endJob(job);
   }
+
+  // Child layers for local NetworkLinks (guarded against cycles and runaway nesting).
+  if (layerId && links.length > 0) {
+    const depth = opts.depth ?? 0;
+    const visited = opts.visited ?? new Set<string>();
+    visited.add(pathKey(path));
+    for (const link of links) {
+      const key = pathKey(link.path);
+      if (depth >= MAX_LINK_DEPTH || visited.has(key)) continue;
+      visited.add(key);
+      await openFile(link.path, {
+        derivedFrom: parentName,
+        linkName: link.name,
+        depth: depth + 1,
+        visited,
+      });
+    }
+  }
+  return layerId;
+}
+
+/** Removes every layer (used when opening a project). */
+export function removeAllLayers() {
+  for (const l of [...useLayers.getState().layers]) removeLayer(l.id);
 }
 
 /** Removes a layer from the store, the scene, and the Rust side. */

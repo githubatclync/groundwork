@@ -1,9 +1,11 @@
-// Top toolbar: Open, basemap picker, and Settings. More tools arrive in later milestones.
+// Top toolbar: files and projects, basemap, search, measure/draw tools, undo/redo, exports, settings.
 import { availability } from '../globe/basemaps';
 import { pickGeodataFiles } from '../io/import';
-import { openFiles } from '../layers/layerManager';
+import { openPaths } from '../layers/openPaths';
 import { useUserLayer } from '../layers/userLayerStore';
 import { useTool, type Tool } from '../tools/toolStore';
+import { ProjectMenu } from './ProjectMenu';
+import { SearchBox } from './SearchBox';
 import { useUi } from './uiStore';
 import {
   allBasemaps,
@@ -16,10 +18,12 @@ export function Toolbar({
   onOpenSettings,
   onExport,
   onExportImage,
+  onHelp,
 }: {
   onOpenSettings: () => void;
   onExport: () => void;
   onExportImage: () => void;
+  onHelp: () => void;
 }) {
   const settings = useSettings();
   const keys = selectKeys(settings);
@@ -34,7 +38,7 @@ export function Toolbar({
 
   const open = async () => {
     const paths = await pickGeodataFiles();
-    if (paths.length) await openFiles(paths);
+    if (paths.length) await openPaths(paths);
   };
 
   return (
@@ -43,6 +47,7 @@ export function Toolbar({
       <button type="button" onClick={() => void open()}>
         Open…
       </button>
+      <ProjectMenu />
       <label className="field-inline">
         Basemap
         <select
@@ -117,6 +122,7 @@ export function Toolbar({
           Redo
         </button>
       </div>
+      <SearchBox />
       <span className="spacer" />
       <button type="button" onClick={onExportImage}>
         Export image…
@@ -129,6 +135,14 @@ export function Toolbar({
       </button>
       <button type="button" onClick={onOpenSettings}>
         Settings
+      </button>
+      <button
+        type="button"
+        onClick={onHelp}
+        title="Keyboard shortcuts (?)"
+        aria-label="Keyboard shortcuts"
+      >
+        ?
       </button>
     </header>
   );

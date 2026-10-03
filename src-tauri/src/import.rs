@@ -5,8 +5,8 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
-use crate::layer::{LayerBuilder, LayerData, Loc, Resources};
-use crate::{geojson, gpx, kml};
+use crate::layer::{percent_decode, LayerBuilder, LayerData, Loc, Resources};
+use crate::{csv_import, geojson, gpx, kml};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ImportError {
@@ -120,7 +120,9 @@ fn import_kml(path: &Path, file: &str) -> Result<LayerData, ImportError> {
     )?;
     let dir = path.parent().map(|p| p.to_path_buf());
     let resources = dir.map(Resources::Dir).unwrap_or(Resources::None);
-    Ok(b.finish(&path.to_string_lossy(), "kml", resources))
+    let mut data = b.finish(&path.to_string_lossy(), "kml", resources);
+    resolve_links(&mut data, path);
+    Ok(data)
 }
 
 fn import_kmz(path: &Path, file: &str) -> Result<LayerData, ImportError> {
@@ -153,7 +155,47 @@ fn import_kmz(path: &Path, file: &str) -> Result<LayerData, ImportError> {
         &mut b,
     )?;
     let resources = Resources::Zip(std::sync::Mutex::new(open()?));
-    Ok(b.finish(&path.to_string_lossy(), "kmz", resources))
+    let mut data = b.finish(&path.to_string_lossy(), "kmz", resources);
+    resolve_links(&mut data, path);
+    Ok(data)
+}
+
+/// Removes `.` and `..` components without touching the file system.
+fn normalize(p: &Path) -> std::path::PathBuf {
+    let mut out = std::path::PathBuf::new();
+    for c in p.components() {
+        match c {
+            std::path::Component::ParentDir => {
+                out.pop();
+            }
+            std::path::Component::CurDir => {}
+            other => out.push(other.as_os_str()),
+        }
+    }
+    out
+}
+
+/// Resolves NetworkLink hrefs against the folder of the file that contains them. Links to files that
+/// do not exist are dropped with a warning.
+fn resolve_links(data: &mut LayerData, source: &Path) {
+    let Some(dir) = source.parent() else { return };
+    let mut missing = 0u32;
+    for mut link in std::mem::take(&mut data.links) {
+        let target = normalize(&dir.join(percent_decode(&link.path)));
+        if target.is_file() {
+            link.path = target.to_string_lossy().into_owned();
+            data.links.push(link);
+        } else {
+            missing += 1;
+        }
+    }
+    if missing > 0 {
+        data.warnings.push(crate::layer::Warning {
+            kind: "NetworkLink target missing".into(),
+            message: "A NetworkLink points at a file that does not exist next to this one".into(),
+            count: missing,
+        });
+    }
 }
 
 fn import_geojson(path: &Path, file: &str) -> Result<LayerData, ImportError> {
@@ -198,6 +240,7 @@ pub fn import_path(path: &str) -> Result<LayerData, ImportError> {
         Some("kmz") => import_kmz(p, &file),
         Some("geojson") | Some("json") => import_geojson(p, &file),
         Some("gpx") => import_gpx(p, &file),
+        Some("csv") => csv_import::import_auto(p),
         _ => Err(ImportError::Unsupported { file }),
     }
 }
@@ -374,5 +417,54 @@ mod tests {
             n += 1;
         }
         assert!(n >= 8, "expected the fixture set, found {n}");
+    }
+}
+
+#[cfg(test)]
+mod link_tests {
+    use super::*;
+
+    fn fixtures() -> std::path::PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../test-data/fixtures")
+    }
+
+    #[test]
+    fn network_links_resolve_against_the_parent_file() {
+        let parent =
+            import_path(fixtures().join("networklink-parent.kml").to_str().unwrap()).unwrap();
+        assert_eq!(parent.features.len(), 1);
+        assert_eq!(
+            parent.links.len(),
+            1,
+            "only the existing local file is kept"
+        );
+        assert_eq!(parent.links[0].name, "Local child");
+        assert!(
+            parent.links[0].path.ends_with("networklink-child.kml"),
+            "{}",
+            parent.links[0].path
+        );
+        assert!(Path::new(&parent.links[0].path).is_absolute());
+        let kinds: Vec<_> = parent.warnings.iter().map(|w| w.kind.as_str()).collect();
+        assert!(kinds.contains(&"NetworkLink"), "{kinds:?}"); // the online feed
+        assert!(kinds.contains(&"NetworkLink target missing"), "{kinds:?}");
+        let child = import_path(&parent.links[0].path).unwrap();
+        assert_eq!(child.features[0].name, "Child point");
+    }
+
+    #[test]
+    fn normalize_collapses_dot_segments() {
+        assert_eq!(
+            normalize(Path::new("a/b/../c/./d")),
+            std::path::PathBuf::from("a/c/d")
+        );
+    }
+
+    #[test]
+    fn csv_files_import_through_the_common_entry_point() {
+        let l = import_path(fixtures().join("cities.csv").to_str().unwrap()).unwrap();
+        assert_eq!(l.format, "csv");
+        assert_eq!(l.features.len(), 3);
+        assert_eq!(l.warnings[0].count, 1);
     }
 }

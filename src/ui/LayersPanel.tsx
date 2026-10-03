@@ -7,6 +7,7 @@ import { makeEditableCopy } from '../layers/editableCopy';
 import { removeLayer } from '../layers/layerManager';
 import { useLayers, type ImportJob, type Layer } from '../layers/layerStore';
 import { useUserLayer } from '../layers/userLayerStore';
+import { StartScreen } from './StartScreen';
 
 const PHASE_LABEL: Record<ImportJob['phase'], string> = {
   reading: 'Reading file…',
@@ -227,9 +228,7 @@ export function LayersPanel() {
         ))}
         <UserLayerRow />
       </ul>
-      {layers.length === 0 && jobs.length === 0 && (
-        <p className="muted">Drop a KML, KMZ, GeoJSON, or GPX file on the window, or use Open.</p>
-      )}
+      {layers.length === 0 && jobs.length === 0 && <StartScreen />}
     </aside>
   );
 }

@@ -3,8 +3,10 @@ pub mod attributes;
 pub mod binary;
 pub mod commands;
 pub mod csv;
+pub mod csv_import;
 pub mod export;
 pub mod geo;
+pub mod geocode;
 pub mod geojson;
 pub mod gpx;
 pub mod import;
@@ -12,6 +14,7 @@ pub mod kml;
 pub mod layer;
 mod mbtiles;
 pub mod style;
+pub mod textfile;
 
 /// Starts the Tauri application.
 pub fn run() {
@@ -32,6 +35,12 @@ pub fn run() {
             commands::get_feature,
             commands::get_launch_files,
             commands::export_csv,
+            commands::inspect_csv,
+            commands::import_csv_file,
+            commands::geocode,
+            commands::read_text_file,
+            commands::write_text_file,
+            commands::file_exists,
             commands::save_png,
             commands::export_layer_file,
             commands::export_user_layer,

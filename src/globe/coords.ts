@@ -92,3 +92,47 @@ export function formatCoords(format: CoordFormat, lat: number, lon: number): str
   if (format === 'utm') return formatUTM(lat, lon);
   return formatDD(lat, lon);
 }
+
+/** UTM to WGS84 lat/lon (inverse Krüger series). Returns null for out-of-range input. */
+export function fromUtm(
+  zone: number,
+  hemisphere: 'N' | 'S',
+  easting: number,
+  northing: number,
+): { lat: number; lon: number } | null {
+  if (!(zone >= 1 && zone <= 60) || !Number.isFinite(easting) || !Number.isFinite(northing))
+    return null;
+  const a = 6378137;
+  const f = 1 / 298.257223563;
+  const k0 = 0.9996;
+  const n = f / (2 - f);
+  const A = (a / (1 + n)) * (1 + (n * n) / 4 + n ** 4 / 64);
+  const beta = [
+    n / 2 - (2 * n * n) / 3 + (37 * n ** 3) / 96,
+    n ** 2 / 48 + n ** 3 / 15,
+    (17 * n ** 3) / 480,
+  ];
+  const delta = [
+    2 * n - (2 * n * n) / 3 - 2 * n ** 3,
+    (7 * n * n) / 3 - (8 * n ** 3) / 5,
+    (56 * n ** 3) / 15,
+  ];
+  const xi = (northing - (hemisphere === 'S' ? 10000000 : 0)) / (k0 * A);
+  const eta = (easting - 500000) / (k0 * A);
+  let xiP = xi;
+  let etaP = eta;
+  beta.forEach((b, i) => {
+    const j = 2 * (i + 1);
+    xiP -= b * Math.sin(j * xi) * Math.cosh(j * eta);
+    etaP -= b * Math.cos(j * xi) * Math.sinh(j * eta);
+  });
+  const chi = Math.asin(Math.sin(xiP) / Math.cosh(etaP));
+  let phi = chi;
+  delta.forEach((d, i) => {
+    phi += d * Math.sin(2 * (i + 1) * chi);
+  });
+  const lon0 = (zone - 1) * 6 - 180 + 3;
+  const lon = lon0 + (Math.atan2(Math.sinh(etaP), Math.cos(xiP)) * 180) / Math.PI;
+  const lat = (phi * 180) / Math.PI;
+  return Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+}

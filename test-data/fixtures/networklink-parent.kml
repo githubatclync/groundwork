@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+  <name>NetworkLink parent</name>
+  <Placemark><name>Parent point</name><Point><coordinates>-122.00,37.50</coordinates></Point></Placemark>
+  <NetworkLink><name>Local child</name><Link><href>networklink-child.kml</href></Link></NetworkLink>
+  <NetworkLink><name>Missing child</name><Link><href>does-not-exist.kml</href></Link></NetworkLink>
+  <NetworkLink><name>Online feed</name><Link><href>http://example.com/feed.kml</href></Link></NetworkLink>
+</Document>
+</kml>

@@ -18,6 +18,8 @@ use crate::style::{kml_color_to_rgba, normalize_href, StyleDef, WHITE};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum E {
     Kml,
+    NetworkLink,
+    Link,
     Document,
     Folder,
     Placemark,
@@ -69,6 +71,8 @@ enum E {
 fn classify(name: &str) -> E {
     match name {
         "kml" => E::Kml,
+        "NetworkLink" => E::NetworkLink,
+        "Link" | "Url" => E::Link,
         "Document" => E::Document,
         "Folder" => E::Folder,
         "Placemark" => E::Placemark,
@@ -122,8 +126,7 @@ fn classify(name: &str) -> E {
 fn is_unsupported(name: &str) -> bool {
     matches!(
         name,
-        "NetworkLink"
-            | "ScreenOverlay"
+        "ScreenOverlay"
             | "PhotoOverlay"
             | "Model"
             | "Track"
@@ -172,6 +175,20 @@ fn is_geometry(e: E) -> bool {
 
 fn truthy(s: &str) -> bool {
     matches!(s.trim(), "1" | "true" | "True" | "TRUE")
+}
+
+/// The href of a NetworkLink if it points at a local, relative KML/KMZ/GeoJSON/GPX file (no scheme,
+/// no query string, not an absolute path); otherwise None.
+pub fn local_relative_target(href: &str) -> Option<String> {
+    let h = href.trim();
+    if h.is_empty() || h.contains("://") || h.contains('?') || h.starts_with("//") {
+        return None;
+    }
+    let absolute =
+        h.starts_with('/') || h.starts_with(char::from(92u8)) || h.as_bytes().get(1) == Some(&b':');
+    let ext = h.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    (!absolute && ["kml", "kmz", "geojson", "json", "gpx"].contains(&ext.as_str()))
+        .then(|| h.to_string())
 }
 
 /// Parses `lon,lat[,alt]` tuples separated by whitespace. Tuples may contain stray whitespace
@@ -329,6 +346,8 @@ struct Parser<'b> {
     data_name: String,
     simple_name: String,
     overlay: Option<Ov>,
+    /// A NetworkLink being parsed: its name and href.
+    netlink: Option<(String, Option<String>)>,
 }
 
 fn attr(e: &BytesStart, key: &str) -> Option<String> {
@@ -360,6 +379,7 @@ impl<'b> Parser<'b> {
             data_name: String::new(),
             simple_name: String::new(),
             overlay: None,
+            netlink: None,
         }
     }
 
@@ -452,6 +472,7 @@ impl<'b> Parser<'b> {
                     s.def.has_label = true;
                 }
             }
+            E::NetworkLink => self.netlink = Some((String::new(), None)),
             E::GroundOverlay => {
                 self.overlay = Some(Ov {
                     visible: true,
@@ -527,6 +548,11 @@ impl<'b> Parser<'b> {
                 Some(E::GroundOverlay) => {
                     if let Some(o) = &mut self.overlay {
                         o.name = t.to_string();
+                    }
+                }
+                Some(E::NetworkLink) => {
+                    if let Some(n) = &mut self.netlink {
+                        n.0 = t.to_string();
                     }
                 }
                 _ => {}
@@ -650,6 +676,11 @@ impl<'b> Parser<'b> {
                 let v = t.parse::<f32>().ok();
                 self.with_style(|d| d.icon_heading = v);
             }
+            E::Href if parent == Some(E::Link) && grand == Some(E::NetworkLink) => {
+                if let Some(n) = &mut self.netlink {
+                    n.1 = Some(t.to_string());
+                }
+            }
             E::Href if parent == Some(E::Icon) => match grand {
                 Some(E::IconStyle) => {
                     let h = t.to_string();
@@ -745,6 +776,7 @@ impl<'b> Parser<'b> {
                     }
                 }
             }
+            E::NetworkLink => self.finish_netlink(),
             E::GroundOverlay => self.finish_overlay(),
             E::Placemark => self.finish_placemark(),
             _ => {}
@@ -831,6 +863,20 @@ impl<'b> Parser<'b> {
             self.b.add_attr(&k, v);
         }
         self.b.end_feature();
+    }
+
+    /// A link to another local file becomes a child layer; anything else is skipped with a warning.
+    fn finish_netlink(&mut self) {
+        let Some((name, href)) = self.netlink.take() else {
+            return;
+        };
+        match href.as_deref().and_then(local_relative_target) {
+            Some(h) => self.b.add_link(name, h),
+            None => self.b.warn(
+                "NetworkLink",
+                "Network links to online or non-file locations are not followed (offline-first)",
+            ),
+        }
     }
 
     fn finish_overlay(&mut self) {

@@ -23,6 +23,17 @@ export interface PersistedSettings extends Keys {
   showFps: boolean;
   basemapId: string;
   mbtilesPaths: string[];
+  /** Most recently used project files, newest first. */
+  recentProjects: string[];
+}
+
+export const MAX_RECENT_PROJECTS = 8;
+
+/** Puts `path` first in the recent list, removing an earlier entry for the same file. */
+export function withRecentProject(list: string[], path: string): string[] {
+  const norm = (p: string) => p.replace(/\\/g, '/').toLowerCase();
+  const same = (a: string, b: string) => norm(a) === norm(b);
+  return [path, ...list.filter((p) => !same(p, path))].slice(0, MAX_RECENT_PROJECTS);
 }
 
 export const DEFAULT_SETTINGS: PersistedSettings = {
@@ -35,6 +46,7 @@ export const DEFAULT_SETTINGS: PersistedSettings = {
   showFps: false,
   basemapId: OSM_ID,
   mbtilesPaths: [],
+  recentProjects: [],
 };
 
 /** Keeps only values of the right type so a hand-edited or old settings file can't break startup. */
@@ -58,6 +70,11 @@ export function sanitizeSettings(raw: Record<string, unknown>): PersistedSetting
         : d.areaUnit,
     showFps: typeof raw.showFps === 'boolean' ? raw.showFps : d.showFps,
     basemapId: str('basemapId'),
+    recentProjects: Array.isArray(raw.recentProjects)
+      ? raw.recentProjects
+          .filter((p): p is string => typeof p === 'string')
+          .slice(0, MAX_RECENT_PROJECTS)
+      : [],
     mbtilesPaths: Array.isArray(raw.mbtilesPaths)
       ? raw.mbtilesPaths.filter((p): p is string => typeof p === 'string')
       : [],
@@ -75,9 +92,13 @@ interface SettingsState extends PersistedSettings {
   addMbtiles: () => Promise<void>;
   removeMbtiles: (path: string) => Promise<void>;
   dismissProblems: () => void;
+  addRecentProject: (path: string) => Promise<void>;
+  removeRecentProject: (path: string) => Promise<void>;
 }
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+let initPromise: Promise<void> | null = null;
 
 export const useSettings = create<SettingsState>((set, get) => ({
   ...DEFAULT_SETTINGS,
@@ -85,26 +106,29 @@ export const useSettings = create<SettingsState>((set, get) => ({
   mbtiles: [],
   problems: [],
 
-  init: async () => {
-    if (get().loaded) return;
-    const settings = sanitizeSettings(await loadAll().catch(() => ({})));
-    const mbtiles: MbtilesEntry[] = [];
-    const problems: string[] = [];
-    const keptPaths: string[] = [];
-    if (inTauri()) {
-      for (const path of settings.mbtilesPaths) {
-        try {
-          mbtiles.push(await openMbtiles(path));
-          keptPaths.push(path);
-        } catch (e) {
-          problems.push(message(e));
+  // Safe to call from several places: everyone shares one load.
+  init: () => {
+    initPromise ??= (async () => {
+      const settings = sanitizeSettings(await loadAll().catch(() => ({})));
+      const mbtiles: MbtilesEntry[] = [];
+      const problems: string[] = [];
+      const keptPaths: string[] = [];
+      if (inTauri()) {
+        for (const path of settings.mbtilesPaths) {
+          try {
+            mbtiles.push(await openMbtiles(path));
+            keptPaths.push(path);
+          } catch (e) {
+            problems.push(message(e));
+          }
         }
       }
-    }
-    set({ ...settings, mbtilesPaths: keptPaths, mbtiles, problems, loaded: true });
-    if (keptPaths.length !== settings.mbtilesPaths.length) {
-      await saveValues({ mbtilesPaths: keptPaths }).catch(() => undefined);
-    }
+      set({ ...settings, mbtilesPaths: keptPaths, mbtiles, problems, loaded: true });
+      if (keptPaths.length !== settings.mbtilesPaths.length) {
+        await saveValues({ mbtilesPaths: keptPaths }).catch(() => undefined);
+      }
+    })();
+    return initPromise;
   },
 
   update: async (patch) => {
@@ -143,6 +167,13 @@ export const useSettings = create<SettingsState>((set, get) => ({
   },
 
   dismissProblems: () => set({ problems: [] }),
+
+  addRecentProject: async (path) => {
+    await get().update({ recentProjects: withRecentProject(get().recentProjects, path) });
+  },
+  removeRecentProject: async (path) => {
+    await get().update({ recentProjects: get().recentProjects.filter((p) => p !== path) });
+  },
 }));
 
 export const selectKeys = (s: Keys): Keys => ({
