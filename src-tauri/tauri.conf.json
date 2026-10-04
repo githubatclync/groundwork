@@ -16,6 +16,10 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Utility",
+    "copyright": "Copyright (c) 2026 Groundwork contributors. MIT license.",
+    "shortDescription": "Local-first desktop globe for viewing, measuring and editing your own geodata",
+    "longDescription": "Groundwork opens KML, KMZ, GeoJSON, GPX and CSV files, measures distance, path and area, lets you draw and edit features, and exports to KML, KMZ, GeoJSON, PNG and CSV. It works offline.",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
   }
 }

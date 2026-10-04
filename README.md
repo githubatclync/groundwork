@@ -1,7 +1,31 @@
 # Groundwork
 
 A local-first desktop globe for viewing, measuring, and editing your own geodata
-(working title). Built with Tauri 2, React 18, TypeScript, and CesiumJS.
+(working title). Built with Tauri 2, React 18, TypeScript, and CesiumJS. It opens KML, KMZ,
+GeoJSON, GPX, and CSV files of any practical size, measures distance, path, and area on the
+ellipsoid, lets you draw and edit your own features, and exports to KML, KMZ, GeoJSON, PNG, and
+CSV. Everything works offline except online basemaps. Free and open source (MIT).
+
+## Download
+
+Installers for Windows, macOS, and Linux are on the
+[Releases page](../../releases/latest). The builds are not code-signed, so expect a first-run
+warning:
+
+- **Windows:** SmartScreen says "Windows protected your PC". Choose "More info", then "Run anyway".
+- **macOS:** Gatekeeper blocks the app on first open. Right-click the app, choose Open, then Open
+  again (or allow it under System Settings > Privacy & Security).
+- **Linux:** use the `.AppImage` (make it executable), or install the `.deb` or `.rpm`.
+
+## Reporting bugs and requesting features
+
+Please use [GitHub Issues](../../issues/new/choose). Include your version, operating system, and
+steps to reproduce; a small anonymised sample file helps a lot.
+
+## License
+
+MIT, see [LICENSE](LICENSE). CesiumJS is Apache-2.0. Basemap imagery and Cesium ion content have
+their own terms; see the attribution shown on the map.
 
 ## Prerequisites
 

@@ -2,6 +2,7 @@
 name = "groundwork"
 version = "0.1.0"
 description = "Local-first desktop globe for viewing, measuring, and editing your own geodata"
+license = "MIT"
 edition = "2021"
 
 [lib]
